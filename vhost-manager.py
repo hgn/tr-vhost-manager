@@ -68,11 +68,21 @@ class HostCreator():
 
     def create(self):
         u.exec("sudo LC_ALL=C lxc-create --bdev dir -f $(dirname "${BASH_SOURCE[0]}")/lxc-config -n $name -t $distribution --logpriority=DEBUG --logfile $logpath -- -r xenial")
-        u.exec("")
-        u.exec("")
-        u.exec("")
-        u.exec("")
-        u.exec("")
+        u.exec("sudo lxc-start -n $name -d")
+        u.exec("cat $(dirname "${BASH_SOURCE[0]}")/etc.network.interfaces | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/etc/network/interfaces'")
+        u.exec("sudo lxc-stop -n $name")
+        u.exec("sudo lxc-start -n $name -d")
+        u.exec("sudo lxc-attach -n  $name --clear-env -- bash -c 'mkdir -p /etc/olsrd/'")
+        u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/post-install-phase-01.sh | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/tmp/post-install-phase-01.sh'")
+        u.exec("lxc-exec-root $name "/tmp/post-install-phase-01.sh"")
+        u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/vimrc | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/home/admin/.vimrc'")
+        u.exec("cat $HOME/.bashrc | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/home/admin/.bashrc'")
+        u.exec("cat /etc/apt/apt.conf | sudo lxc-attach -n  $name --clear-env -- bash -c 'cat >/etc/apt/apt.conf'")
+        u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/post-install-phase-02.sh | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/tmp/post-install-phase-02.sh'")
+        u.exec("lxc-exec $name "admin" "bash /tmp/post-install-phase-02.sh"")
+        u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/post-install-phase-03.sh | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/tmp/post-install-phase-03.sh'")
+        u.exec("lxc-exec $name "admin" "bash /tmp/post-install-phase-03.sh"")
+        u.exec("sudo lxc-stop -n $name")
 
 
 class Creator():
