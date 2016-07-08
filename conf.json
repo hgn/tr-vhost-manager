@@ -1,0 +1,42 @@
+{
+	"devices" : {
+		"terminals" : {
+			"02t01" : {
+				"interfaces" : {
+					"eth0" : {
+						"ipv4-addr" : "172.16.1.1",
+						"ipv4-addr-netmask" : "255.255.255.0",
+						"lxr-hw-addr": "AC:BB:01:01:xx:xx",
+						"lxr-link": "br01r01t01"
+					},
+					"air0" : {
+						"ipv4-addr" : "169.254.1.1",
+						"ipv4-addr-netmask" : "255.255.255.0",
+						"post-up" : [
+                            "ip route add 172.17.1.0/24 via 169.254.1.2 dev air0 || true"
+                        ],
+						"lxr-hw-addr": "AC:AA:01:01:xx:xx",
+						"lxr-link": "brFFt01x01"
+					}
+				}
+			}
+		},
+
+		"router" : {
+		},
+
+		"ue" : {
+		}
+	},
+
+	"topologies" : {
+		"simple-three" : {
+			"description" : "two terminals, two router",
+			"topo" : {
+				"bridges" : [ "brFFt01x01", "br01r01t01" ],
+				"terminals" : [ "02t01" ]
+			}
+		}
+	}
+}
+
