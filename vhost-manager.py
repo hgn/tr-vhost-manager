@@ -11,14 +11,22 @@ import inspect
 import shutil
 import pprint
 import locale
+import json
+import tempfile
 
 
-__programm__ = ""
+INET_IFACE_NAME = "inet0"
+INET_BRIDGE_NAME = "lxcbr0"
+
+
+
+__programm__ = "vhost-manager"
 __version__  = "1"
 
 pp = pprint.PrettyPrinter(indent=4)
 
 
+class ArgumentException(Exception): pass
 
 class Printer:
 
@@ -56,41 +64,155 @@ class Printer:
 class Utils:
 
     def exec(self, args):
+        print("execute: \"{}\"".format(args))
         os.system(args)
+
+
+class Configuration():
+
+    def __init__(self, topology_name):
+        self.db = self.load_configuration("conf.json")
+        self.topology_name = topology_name
+
+    def load_configuration(self, filename):
+        with open(filename) as json_data:
+            d = json.load(json_data)
+            json_data.close()
+            return d
+
+    def is_valid(self):
+        for topology in self.db["topologies"]:
+            if self.topology_name == topology:
+                return True
+        raise ArgumentException("topology not found: {}".format(self.topology_name))
+
+    def bridge_handle(self, bridge_name):
+        return bridge_name
+
+    def terminal_gen_config(self, terminal_data):
+        d = {}
+        # standard data always present
+        e  = "auto lo\n"
+        e += "iface lo inet loopback\n\n"
+        e += "auto inet0\n"
+        e += "iface inet0 inet dhcp\n\n"
+
+        # Debian Network section
+        for interface_name, interface_data in terminal_data["interfaces"].items():
+            e += "auto {}\n".format(interface_name)
+            e += "iface {} inet static\n".format(interface_name)
+            e += "  address {}\n".format(interface_data["ipv4-addr"])
+            e += "  netmask {}\n".format(interface_data["ipv4-addr-netmask"])
+            if "post-up" in interface_data:
+                assert isinstance(interface_data["post-up"], list)
+                for line in interface_data["post-up"]:
+                    e += "  post-up {}\n".format(line)
+            e += "\n"
+        d["debian-interface-conf"] = e
+
+        # LXC section
+        e  = "lxc.network.type = veth\n"
+        e += "lxc.network.name = {}\n".format(INET_IFACE_NAME)
+        e += "lxc.network.flags = up\n"
+        e += "lxc.network.link = {}\n".format(INET_BRIDGE_NAME)
+        e += "lxc.network.hwaddr = 00:11:xx:xx:xx:xx\n\n"
+        
+        for interface_name, interface_data in terminal_data["interfaces"].items():
+            e += "lxc.network.type = veth\n"
+            e += "lxc.network.name = {}\n".format(interface_name)
+            e += "lxc.network.flags = up\n"
+            e += "lxc.network.link = {}\n".format(interface_data["lxr-link"])
+            e += "lxc.network.hwaddr = {}\n\n".format(interface_data["lxr-hw-addr"])
+        d["lxr-conf"] = e
+        return d
+
+    def terminal_handle(self, terminal_name):
+        d = dict()
+        if terminal_name not in self.db["devices"]["terminals"]:
+            print("terminal {} not defined".format(terminal_name)) 
+            sys.exit(1)
+        terminal = self.db["devices"]["terminals"][terminal_name]
+        d['config'] = self.terminal_gen_config(terminal)
+        return d
+
+    def load_topo(self):
+        topo = self.db["topologies"][self.topology_name]
+        ret = dict()
+        ret['terminals'] = list()
+        ret['routers'] = list()
+        ret['ues'] = list()
+        ret['bridges'] = list()
+        for k, v in topo["topo"].items():
+            if k == "bridges":
+                for bridge in v:
+                    e = self.bridge_handle(bridge)
+                    ret['bridges'].append([bridge, e])
+            if k == "terminals":
+                for terminal in v:
+                    e = self.terminal_handle(terminal)
+                    ret['terminals'].append([terminal, e])
+        return ret
+
+
+
+class BridgeCreator():
+    pass
 
 
 class HostCreator():
 
-
-    def __init__(self, config):
-        self.u = Utils()
+    def __init__(self, utils, name, config):
+        self.u = utils
+        self.name = name
         self.config = config
+        self.create_tmp_files()
+
+    def create_tmp_files(self):
+        self.tf_net = tempfile.NamedTemporaryFile()
+
+    def remove_tmp_files(self):
+        close(self.tf_lxc)
+        close(self.tf_net)
+
+    def create_container(self):
+        tf_lxc = tempfile.NamedTemporaryFile(mode='w')
+        config_lxc = self.config['config']['lxr-conf']
+        tf_lxc.write(config_lxc)
+        #tf_lxc.write(str.decode(config_lxc))
+
+        cmd  = "sudo LC_ALL=C lxc-create --bdev dir -n {} ".format(self.name)
+        cmd += "-f {} -t Ubuntu -- -r xenial".format(tf_lxc.name)
+        self.u.exec(cmd)
+
+
+        #print(config_lxc)
+        #u.exec("sudo LC_ALL=C lxc-create --bdev dir -f $(dirname "${BASH_SOURCE[0]}")/lxc-config -n $name -t $distribution --logpriority=DEBUG --logfile $logpath -- -r xenial")
 
     def create(self):
-        u.exec("sudo LC_ALL=C lxc-create --bdev dir -f $(dirname "${BASH_SOURCE[0]}")/lxc-config -n $name -t $distribution --logpriority=DEBUG --logfile $logpath -- -r xenial")
-        u.exec("sudo lxc-start -n $name -d")
-        u.exec("cat $(dirname "${BASH_SOURCE[0]}")/etc.network.interfaces | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/etc/network/interfaces'")
-        u.exec("sudo lxc-stop -n $name")
-        u.exec("sudo lxc-start -n $name -d")
-        u.exec("sudo lxc-attach -n  $name --clear-env -- bash -c 'mkdir -p /etc/olsrd/'")
-        u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/post-install-phase-01.sh | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/tmp/post-install-phase-01.sh'")
-        u.exec("lxc-exec-root $name "/tmp/post-install-phase-01.sh"")
-        u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/vimrc | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/home/admin/.vimrc'")
-        u.exec("cat $HOME/.bashrc | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/home/admin/.bashrc'")
-        u.exec("cat /etc/apt/apt.conf | sudo lxc-attach -n  $name --clear-env -- bash -c 'cat >/etc/apt/apt.conf'")
-        u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/post-install-phase-02.sh | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/tmp/post-install-phase-02.sh'")
-        u.exec("lxc-exec $name "admin" "bash /tmp/post-install-phase-02.sh"")
-        u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/post-install-phase-03.sh | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/tmp/post-install-phase-03.sh'")
-        u.exec("lxc-exec $name "admin" "bash /tmp/post-install-phase-03.sh"")
-        u.exec("sudo lxc-stop -n $name")
+        self.create_container()
+        #u.exec("sudo lxc-start -n $name -d")
+        #u.exec("cat $(dirname "${BASH_SOURCE[0]}")/etc.network.interfaces | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/etc/network/interfaces'")
+        #u.exec("sudo lxc-stop -n $name")
+        #u.exec("sudo lxc-start -n $name -d")
+        #u.exec("sudo lxc-attach -n  $name --clear-env -- bash -c 'mkdir -p /etc/olsrd/'")
+        #u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/post-install-phase-01.sh | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/tmp/post-install-phase-01.sh'")
+        #u.exec("lxc-exec-root $name "/tmp/post-install-phase-01.sh"")
+        #u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/vimrc | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/home/admin/.vimrc'")
+        #u.exec("cat $HOME/.bashrc | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/home/admin/.bashrc'")
+        #u.exec("cat /etc/apt/apt.conf | sudo lxc-attach -n  $name --clear-env -- bash -c 'cat >/etc/apt/apt.conf'")
+        #u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/post-install-phase-02.sh | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/tmp/post-install-phase-02.sh'")
+        #u.exec("lxc-exec $name "admin" "bash /tmp/post-install-phase-02.sh"")
+        #u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/post-install-phase-03.sh | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/tmp/post-install-phase-03.sh'")
+        #u.exec("lxc-exec $name "admin" "bash /tmp/post-install-phase-03.sh"")
+        #u.exec("sudo lxc-stop -n $name")
 
 
 class Creator():
 
     def __init__(self):
+        self.u = Utils()
         self.p = Printer()
         self.parse_local_options()
-
 
     def parse_local_options(self):
         parser = argparse.ArgumentParser()
@@ -101,10 +223,37 @@ class Creator():
         if self.args.verbose:
             self.p.set_verbose()
 
-    def run(self):
-        h = HostCreator()
+    def create_bridge(self, name, bridge):
+        print("create bridge: {}".format(bridge))
+
+    def create_host(self, name, config):
+        h = HostCreator(self.u, name, config)
         h.create()
 
+    def create_terminal(self, name, terminal):
+        self.create_host(name, terminal)
+
+    def create_router(self, name, router):
+        self.create_host(name, router)
+
+    def create_ue(self, name, ue):
+        self.create_host(name, ue)
+
+    def run(self):
+        try:
+            c = Configuration(self.args.topology)
+        except ArgumentException as e:
+            print("not a valid topology: {}".format(e))
+            sys.exit(1)
+        topo = c.load_topo()
+        for name, data in topo['bridges']:
+            self.create_bridge(name, data)
+        for name, data in topo['terminals']:
+            self.create_terminal(name, data)
+        for name, data in topo['routers']:
+            self.create_router(name, data)
+        for name, data in topo['ues']:
+            self.create_ue(name, data)
 
 
 class Lister():
