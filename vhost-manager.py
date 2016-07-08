@@ -13,6 +13,8 @@ import pprint
 import locale
 import json
 import tempfile
+import time
+import stat
 
 
 INET_IFACE_NAME = "inet0"
@@ -24,6 +26,8 @@ __programm__ = "vhost-manager"
 __version__  = "1"
 
 pp = pprint.PrettyPrinter(indent=4)
+
+TMPDIR = tempfile.mkdtemp()
 
 
 class ArgumentException(Exception): pass
@@ -66,6 +70,29 @@ class Utils:
     def exec(self, args):
         print("execute: \"{}\"".format(args))
         os.system(args)
+    
+    def query_yes_no(self, question, default="yes"):
+        valid = {"yes": True, "y": True, "ye": True,
+                "no": False, "n": False}
+        if default is None:
+            prompt = " [y/n] "
+        elif default == "yes":
+            prompt = " [Y/n] "
+        elif default == "no":
+            prompt = " [y/N] "
+        else:
+            raise ValueError("invalid default answer: '%s'" % default)
+        
+        while True:
+            sys.stdout.write(question + prompt)
+            choice = input().lower()
+            if default is not None and choice == '':
+                return valid[default]
+            elif choice in valid:
+                return valid[choice]
+            else:
+                sys.stdout.write("Please respond with 'yes' or 'no' "
+                                 "(or 'y' or 'n').\n")
 
 
 class Configuration():
@@ -108,7 +135,7 @@ class Configuration():
                 for line in interface_data["post-up"]:
                     e += "  post-up {}\n".format(line)
             e += "\n"
-        d["debian-interface-conf"] = e
+        d["conf-debian-interface"] = e
 
         # LXC section
         e  = "lxc.network.type = veth\n"
@@ -123,7 +150,7 @@ class Configuration():
             e += "lxc.network.flags = up\n"
             e += "lxc.network.link = {}\n".format(interface_data["lxr-link"])
             e += "lxc.network.hwaddr = {}\n\n".format(interface_data["lxr-hw-addr"])
-        d["lxr-conf"] = e
+        d["conf-lxc"] = e
         return d
 
     def terminal_handle(self, terminal_name):
@@ -165,32 +192,59 @@ class HostCreator():
         self.u = utils
         self.name = name
         self.config = config
-        self.create_tmp_files()
-
-    def create_tmp_files(self):
-        self.tf_net = tempfile.NamedTemporaryFile()
+        self.container = None
 
     def remove_tmp_files(self):
         close(self.tf_lxc)
         close(self.tf_net)
 
+    def tmp_file_new(self, string):
+        name = os.path.join(TMPDIR, string)
+        fd = open(name,"w")
+        return fd, name
+
+    def tmp_file_destroy(self, name):
+        os.remove(name)
+
     def create_container(self):
-        tf_lxc = tempfile.NamedTemporaryFile(mode='w')
-        config_lxc = self.config['config']['lxr-conf']
-        tf_lxc.write(config_lxc)
-        #tf_lxc.write(str.decode(config_lxc))
+        fd, name = self.tmp_file_new("lxc-conf")
+        config = self.config['config']['conf-lxc']
+        fd.write(config)
+        os.fsync(fd); fd.close()
 
+        # sudo LC_ALL=C lxc-create --bdev dir -f $(dirname "${BASH_SOURCE[0]}")/lxc-config -n $name -t $distribution --logpriority=DEBUG --logfile $logpath -- -r xenial")
         cmd  = "sudo LC_ALL=C lxc-create --bdev dir -n {} ".format(self.name)
-        cmd += "-f {} -t Ubuntu -- -r xenial".format(tf_lxc.name)
+        cmd += "-f {} -t ubuntu -- -r xenial".format(name)
         self.u.exec(cmd)
+        self.tmp_file_destroy(name)
+
+    def start_container(self):
+        self.u.exec("sudo lxc-start -n {} -d".format(self.name))
+        self.container = lxc.Container(self.name)
+
+    def stop_container(self):
+        self.u.exec("sudo lxc-stop -n {}".format(self.name))
+
+    def copy_interface_conf(self):
+        tmp_fd, tmp_name = self.tmp_file_new("lxc-conf")
+        config = self.config['config']['conf-debian-interface']
+        tmp_fd.write(config)
+        os.fsync(tmp_fd); tmp_fd.close()
+
+        cmd  = "cat {} | lxc-attach -n {} ".format(tmp_name, self.name)
+        cmd += " --clear-env -- bash -c 'cat >/etc/network/interfaces'"
+        self.u.exec(cmd)
+        time.sleep(.5)
+
+        self.tmp_file_destroy(tmp_name)
 
 
-        #print(config_lxc)
-        #u.exec("sudo LC_ALL=C lxc-create --bdev dir -f $(dirname "${BASH_SOURCE[0]}")/lxc-config -n $name -t $distribution --logpriority=DEBUG --logfile $logpath -- -r xenial")
 
     def create(self):
         self.create_container()
-        #u.exec("sudo lxc-start -n $name -d")
+        self.start_container()
+        self.copy_interface_conf()
+
         #u.exec("cat $(dirname "${BASH_SOURCE[0]}")/etc.network.interfaces | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/etc/network/interfaces'")
         #u.exec("sudo lxc-stop -n $name")
         #u.exec("sudo lxc-start -n $name -d")
@@ -239,6 +293,29 @@ class Creator():
     def create_ue(self, name, ue):
         self.create_host(name, ue)
 
+    def checktopo(self, topo):
+        searched = ('terminals', 'routers', 'ues')
+        for search in searched:
+            for name, data in topo[search]:
+                print(name)
+                c = lxc.Container(name)
+                if c.defined:
+				
+                    print("Container already exists")
+                    question = "Delete container or exit?"
+                    answer = self.u.query_yes_no(question, default="no")
+                    if answer == True:
+                        print("Delete container in 5 seconds ...")
+                        time.sleep(5)
+                        c.stop()
+                        if not c.destroy():
+                            print("Failed to destroy the container!")
+                            sys.exit(1)
+                    else:
+                        print("exiting, call \"sudo lxc-ls --fancy\" to see all container")
+                        exit(1)
+
+
     def run(self):
         try:
             c = Configuration(self.args.topology)
@@ -246,6 +323,7 @@ class Creator():
             print("not a valid topology: {}".format(e))
             sys.exit(1)
         topo = c.load_topo()
+        self.checktopo(topo)
         for name, data in topo['bridges']:
             self.create_bridge(name, data)
         for name, data in topo['terminals']:
@@ -362,6 +440,11 @@ class VHostManager:
 
 if __name__ == "__main__":
     try:
+        euid = os.geteuid() 
+        if euid != 0:
+            print("Need to be root")
+            exit(1)
+
         vhm = VHostManager()
         sys.exit(vhm.run())
     except KeyboardInterrupt:
