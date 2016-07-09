@@ -15,6 +15,7 @@ import json
 import tempfile
 import time
 import stat
+import atexit
 
 
 INET_IFACE_NAME = "inet0"
@@ -28,7 +29,6 @@ __version__  = "1"
 pp = pprint.PrettyPrinter(indent=4)
 
 TMPDIR = tempfile.mkdtemp()
-
 
 class ArgumentException(Exception): pass
 
@@ -437,12 +437,16 @@ class VHostManager:
         classinstance.run()
         return 0
 
+def remove_tmp_dir():
+    shutil.rmtree(TMPDIR, ignore_errors=True)
 
 if __name__ == "__main__":
     try:
+        atexit.register(remove_tmp_dir)
         euid = os.geteuid() 
         if euid != 0:
             print("Need to be root")
+            print("➡ sudo {}".format(sys.argv[0]))
             exit(1)
 
         vhm = VHostManager()
