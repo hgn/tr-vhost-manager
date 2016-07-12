@@ -218,7 +218,9 @@ class HostCreator():
         fd.write(config)
         os.fsync(fd); fd.close()
 
-        # sudo LC_ALL=C lxc-create --bdev dir -f $(dirname "${BASH_SOURCE[0]}")/lxc-config -n $name -t $distribution --logpriority=DEBUG --logfile $logpath -- -r xenial")
+        # sudo LC_ALL=C lxc-create --bdev dir -f $(dirname "${BASH_SOURCE[0]}")/lxc-config
+        # -n $name -t $distribution --logpriority=DEBUG --logfile $logpath -- -r xenial")
+        # FIXME: logging should be activatable
         cmd  = "sudo LC_ALL=C lxc-create --bdev dir -n {} ".format(self.name)
         cmd += "-f {} -t ubuntu -- -r xenial".format(name)
         self.u.exec(cmd)
@@ -231,16 +233,22 @@ class HostCreator():
     def stop_container(self):
         self.u.exec("sudo lxc-stop -n {}".format(self.name))
 
+    def container_file_copy(self, name, src_path, dst_path):
+        cmd  = "cat {} | lxc-attach -n {} ".format(src_path, name)
+        cmd += " --clear-env -- bash -c 'cat >{}'".format(dst_path)
+        self.u.exec(cmd)
+        # we don't want a race here: we don't know when the new process
+        # is scheduled, so we sleep here for a short period, just to make sure[TM]
+        # that the new process is executed.
+        time.sleep(.5)
+
     def copy_interface_conf(self):
         tmp_fd, tmp_name = self.tmp_file_new("lxc-conf")
         config = self.config['config']['conf-debian-interface']
         tmp_fd.write(config)
         os.fsync(tmp_fd); tmp_fd.close()
 
-        cmd  = "cat {} | lxc-attach -n {} ".format(tmp_name, self.name)
-        cmd += " --clear-env -- bash -c 'cat >/etc/network/interfaces'"
-        self.u.exec(cmd)
-        time.sleep(.5)
+        self.container_file_copy(self.name, tmp_name, "/etc/network/interfaces")
 
         self.tmp_file_destroy(tmp_name)
 
@@ -428,8 +436,6 @@ class VHostManager:
 
         self.first_startup(tmp_dir)
         self.check_ssh_keys(tmp_dir)
-
-        sys.exit(0)
 
     def print_version(self):
         sys.stdout.write("%s\n" % (__version__))
