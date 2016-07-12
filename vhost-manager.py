@@ -16,6 +16,7 @@ import tempfile
 import time
 import stat
 import atexit
+import platform
 
 
 INET_IFACE_NAME = "inet0"
@@ -48,8 +49,11 @@ class Printer:
             return
         sys.stderr.write(msg)
 
-    def msg(self, msg):
-        return sys.stdout.write(msg) - 1
+    def msg(self, msg, stoptime=None):
+        ret = sys.stdout.write(msg) - 1
+        if stoptime:
+            time.sleep(stoptime)
+        return ret
 
     def line(self, length, char='-'):
         sys.stdout.write(char * length + "\n")
@@ -63,6 +67,8 @@ class Printer:
         if post_news:
             self.msg("\n" * post_news)
 
+    def clear(self):
+        os.system("clear")
 
 
 class Utils:
@@ -371,7 +377,50 @@ class VHostManager:
             }
 
     def __init__(self):
-        pass
+        self.p = Printer()
+        self.check_env()
+
+    def install_packages_ubuntu(self):
+        os.system("apt-get install lxc tmux")
+        return True
+
+    def install_packages_arch(self):
+        os.system("pacman -Sy --noconfirm ebtables community/lxc community/debootstrap community/tmux")
+        return True
+
+    def check_installed_packages(self):
+        distribution = platform.linux_distribution()
+        if distribution[0] == "Ubuntu":
+            self.p.msg("seems you are using Ubuntu, great ...\n")
+            return self.install_packages_ubuntu()
+        elif distribution[0] == "Arch":
+            self.p.msg("seems you are using Arch, great ...\n")
+            return self.install_packages_arch()
+        else:
+            self.p.msg("Can't figure out your distribution\n")
+
+        return False
+
+    def first_startup(self):
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        touch_dir  = os.path.join(script_dir, "tmp")
+        touch_file = os.path.join(touch_dir, "already-started")
+        if not os.path.isfile(touch_file):
+            self.p.clear()
+            self.p.msg("Welcome!\n", stoptime=.5)
+            self.p.msg("Seems you are new - great!\n", stoptime=1.0)
+            self.p.msg("I will make sure every requird package is installed ...\n")
+            ok = self.check_installed_packages()
+            if ok:
+                os.makedirs(touch_dir, exist_ok=True)
+                with open(touch_file, "w") as f:
+                    f.write("{}".format(time.time()))
+        
+        sys.exit(0)
+
+
+    def check_env(self):
+        self.first_startup()
 
 
     def print_version(self):
