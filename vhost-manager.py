@@ -367,8 +367,6 @@ class Lister():
 
 
 
-
-
 class VHostManager:
 
     modes = {
@@ -381,7 +379,7 @@ class VHostManager:
         self.check_env()
 
     def install_packages_ubuntu(self):
-        os.system("apt-get install lxc tmux")
+        os.system("apt-get --yes --force-yes install lxc tmux")
         return True
 
     def install_packages_arch(self):
