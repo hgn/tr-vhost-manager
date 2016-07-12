@@ -380,7 +380,7 @@ class VHostManager:
 
     def install_packages_ubuntu(self):
         os.system("apt-get --yes --force-yes update")
-        os.system("apt-get --yes --force-yes install lxc tmux")
+        os.system("apt-get --yes --force-yes install lxc tmux ssh")
         return True
 
     def install_packages_arch(self):
@@ -400,27 +400,36 @@ class VHostManager:
 
         return False
 
-    def first_startup(self):
-        script_dir = os.path.dirname(os.path.realpath(__file__))
-        touch_dir  = os.path.join(script_dir, "tmp")
+    def first_startup(self, touch_dir):
         touch_file = os.path.join(touch_dir, "already-started")
         if not os.path.isfile(touch_file):
             self.p.clear()
-            self.p.msg("Welcome!\n", stoptime=.5)
+            self.p.msg("Welcome!\n", stoptime=1.0)
             self.p.msg("Seems you are new - great!\n", stoptime=1.0)
-            self.p.msg("I will make sure every requird package is installed ...\n")
+            self.p.clear()
+            self.p.msg("I will make sure every required package is installed ...\n", stoptime=2.0)
             ok = self.check_installed_packages()
             if ok:
-                os.makedirs(touch_dir, exist_ok=True)
                 with open(touch_file, "w") as f:
                     f.write("{}".format(time.time()))
-        
-        sys.exit(0)
+
+    def check_ssh_keys(self, tmp_dir):
+        ssh_file = os.path.join(tmp_dir, "ssh-id-rsa")
+        if not os.path.isfile(ssh_file):
+            self.p.clear()
+            self.p.msg("No SSH key found! I will generate a new one ...\n", stoptime=2.0)
+            os.system("ssh-keygen -f tmp/ssh-id-rsa -N ''")
 
 
     def check_env(self):
-        self.first_startup()
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        tmp_dir    = os.path.join(script_dir, "tmp")
+        os.makedirs(tmp_dir, exist_ok=True)
 
+        self.first_startup(tmp_dir)
+        self.check_ssh_keys(tmp_dir)
+
+        sys.exit(0)
 
     def print_version(self):
         sys.stdout.write("%s\n" % (__version__))
