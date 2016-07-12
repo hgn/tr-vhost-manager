@@ -379,6 +379,7 @@ class VHostManager:
         self.check_env()
 
     def install_packages_ubuntu(self):
+        os.system("apt-get --yes --force-yes update")
         os.system("apt-get --yes --force-yes install lxc tmux")
         return True
 
