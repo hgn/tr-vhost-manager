@@ -263,7 +263,7 @@ class HostCreator():
 
     def exec(self, cmd, user=None):
         if user:
-            cmd = "lxc-attach -n {} --clear-env -- bash -c \"su - $USER -c \"{}\"\"".format(self.name, user, cmd)
+            cmd = "lxc-attach -n {} --clear-env -- bash -c \"su - {} -c \'{}\'\"".format(self.name, user, cmd)
         else:
             cmd = "lxc-attach -n {} --clear-env -- bash -c \"{}\"".format(self.name, cmd)
         self.u.exec(cmd)
@@ -327,6 +327,10 @@ class HostCreator():
         self.exec("apt-get -y update")
         self.exec("apt-get -y install git vim bash python3")
 
+    def bootstrap_packages(self):
+        self.exec("git clone https://github.com/hgn/tr-bootstrapper.git", user=self.username)
+        self.exec("python3 tr-bootstrapper/bootstrap.py -vvv", user=self.username)
+
     def create(self):
         self.create_container()
         self.start_container()
@@ -336,12 +340,8 @@ class HostCreator():
         self.copy_dotfiles()
         self.copy_distribution_specific()
         self.install_base_packages()
-
-        #u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/post-install-phase-02.sh | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/tmp/post-install-phase-02.sh'")
-        #u.exec("lxc-exec $name "admin" "bash /tmp/post-install-phase-02.sh"")
-        #u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/post-install-phase-03.sh | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/tmp/post-install-phase-03.sh'")
-        #u.exec("lxc-exec $name "admin" "bash /tmp/post-install-phase-03.sh"")
-        #u.exec("sudo lxc-stop -n $name")
+        self.bootstrap_packages()
+        self.stop_container()
 
 
 class Creator():
