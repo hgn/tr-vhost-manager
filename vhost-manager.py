@@ -32,6 +32,7 @@ pp = pprint.PrettyPrinter(indent=4)
 TMPDIR = tempfile.mkdtemp()
 
 class ArgumentException(Exception): pass
+class EnvironmentException(Exception): pass
 
 class Printer:
 
@@ -448,6 +449,7 @@ class VHostManager:
         return True
 
     def install_packages_arch(self):
+        os.system("pacman -Syu --noconfirm")
         os.system("pacman -Sy --noconfirm ebtables community/lxc community/debootstrap community/tmux")
         return True
 
@@ -455,14 +457,12 @@ class VHostManager:
         distribution = platform.linux_distribution()
         if distribution[0] == "Ubuntu":
             self.p.msg("seems you are using Ubuntu, great ...\n")
-            return self.install_packages_ubuntu()
-        elif distribution[0] == "Arch":
+            self.install_packages_ubuntu()
+        elif distribution[0] == "arch":
             self.p.msg("seems you are using Arch, great ...\n")
-            return self.install_packages_arch()
+            self.install_packages_arch()
         else:
-            self.p.msg("Can't figure out your distribution\n")
-
-        return False
+            raise EnvironmentException("Distribution not detected")
 
     def first_startup(self, touch_dir):
         touch_file = os.path.join(touch_dir, "already-started")
@@ -472,10 +472,9 @@ class VHostManager:
             self.p.msg("Seems you are new - great!\n", stoptime=1.0)
             self.p.clear()
             self.p.msg("I will make sure every required package is installed ...\n", stoptime=2.0)
-            ok = self.check_installed_packages()
-            if ok:
-                with open(touch_file, "w") as f:
-                    f.write("{}".format(time.time()))
+            self.check_installed_packages()
+            with open(touch_file, "w") as f:
+                f.write("{}".format(time.time()))
 
     def check_ssh_keys(self, tmp_dir):
         ssh_file = os.path.join(tmp_dir, "ssh-id-rsa")
