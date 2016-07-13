@@ -197,7 +197,7 @@ class BridgeCreator():
 
     def create(self):
         brige_path = os.path.join("/sys/class/net", self.bridge_name)
-        if os.path.isdir(brige_path)
+        if os.path.isdir(brige_path):
             self.p.msg("bridge {} already created\n".format(self.bridge_name))
             return
         self.u.exec("brctl addbr {}".format(self.bridge_name))
@@ -247,11 +247,15 @@ class HostCreator():
     def stop_container(self):
         self.u.exec("sudo lxc-stop -n {}".format(self.name))
 
+    def restart_container(self):
+        self.stop_container()
+        self.start_container()
+
     def exec(self, cmd, user=None):
         if user:
-            cmd = "lxc-attach -n {} --clear-env -- bash -c "su - $USER -c \"{}\"".format(self.name, user, cmd)
+            cmd = "lxc-attach -n {} --clear-env -- bash -c \"su - $USER -c \"{}\"\"".format(self.name, user, cmd)
         else:
-            cmd = "lxc-attach -n {} --clear-env -- bash {}".format(self.name, cmd)
+            cmd = "lxc-attach -n {} --clear-env -- bash -c \"{}\"".format(self.name, cmd)
         self.u.exec(cmd)
 
     def container_file_copy(self, name, src_path, dst_path):
@@ -268,20 +272,23 @@ class HostCreator():
         config = self.config['config']['conf-debian-interface']
         tmp_fd.write(config)
         os.fsync(tmp_fd); tmp_fd.close()
-
         self.container_file_copy(self.name, tmp_name, "/etc/network/interfaces")
-
         self.tmp_file_destroy(tmp_name)
 
+    def create_user_account(self):
+        self.exec("useradd --create-home --shell /bin/bash --user-group admin")
+        self.exec("echo 'admin:admin' | chpasswd")
+        self.exec("echo 'admin ALL=(ALL) NOPASSWD:ALL' | tee -a /etc/sudoers")
 
 
     def create(self):
         self.create_container()
         self.start_container()
         self.copy_interface_conf()
+        # restart container now to load new network configuration
+        self.restart_container()
+        self.create_user_account()
 
-        #u.exec("cat $(dirname "${BASH_SOURCE[0]}")/etc.network.interfaces | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/etc/network/interfaces'")
-        #u.exec("sudo lxc-stop -n $name")
         #u.exec("sudo lxc-start -n $name -d")
         #u.exec("sudo lxc-attach -n  $name --clear-env -- bash -c 'mkdir -p /etc/olsrd/'")
         #u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/post-install-phase-01.sh | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/tmp/post-install-phase-01.sh'")
