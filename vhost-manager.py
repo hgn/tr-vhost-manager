@@ -208,11 +208,19 @@ class BridgeCreator():
 
 class HostCreator():
 
-    def __init__(self, utils, name, config):
+    def __init__(self, utils, c, p, name, config):
         self.u = utils
+        self.c = c
+        self.p = p
         self.name = name
         self.config = config
         self.container = None
+        self.init_user_credentials()
+
+    def init_user_credentials(self):
+        userdata = self.c.db["user"]
+        self.username = userdata["username"]
+        self.userpass = userdata["userpass"]
 
     def remove_tmp_files(self):
         close(self.tf_lxc)
@@ -258,7 +266,7 @@ class HostCreator():
             cmd = "lxc-attach -n {} --clear-env -- bash -c \"{}\"".format(self.name, cmd)
         self.u.exec(cmd)
 
-    def container_file_copy(self, name, src_path, dst_path):
+    def container_file_copy(self, name, src_path, dst_path, user=None):
         cmd  = "cat {} | lxc-attach -n {} ".format(src_path, name)
         cmd += " --clear-env -- bash -c 'cat >{}'".format(dst_path)
         self.u.exec(cmd)
@@ -266,6 +274,8 @@ class HostCreator():
         # is scheduled, so we sleep here for a short period, just to make sure[TM]
         # that the new process is executed.
         time.sleep(.5)
+        if user:
+            self.exec("chown -R {}:{} {}".format(user, user, dst_path))
 
     def copy_interface_conf(self):
         tmp_fd, tmp_name = self.tmp_file_new("lxc-conf")
@@ -276,10 +286,25 @@ class HostCreator():
         self.tmp_file_destroy(tmp_name)
 
     def create_user_account(self):
-        self.exec("useradd --create-home --shell /bin/bash --user-group admin")
-        self.exec("echo 'admin:admin' | chpasswd")
-        self.exec("echo 'admin ALL=(ALL) NOPASSWD:ALL' | tee -a /etc/sudoers")
+        self.exec("useradd --create-home --shell /bin/bash --user-group {}".format(self.username))
+        self.exec("echo '{}:{}' | chpasswd".format(self.username, self.userpass))
+        self.exec("echo '{} ALL=(ALL) NOPASSWD:ALL' | tee -a /etc/sudoers".format(self.username))
 
+    def copy_dotfiles_plain(self, assets_dir):
+        vimrc_path = os.path.join(assets_dir, "vimrc")
+        assert os.path.isfile(vimrc_path)
+        dst_path = os.path.join("/home", self.username, ".vimrc")
+        self.container_file_copy(self.name, vimrc_path, dst_path, user=self.username)
+
+        bashrc_path = os.path.join(assets_dir, "bashrc")
+        assert os.path.isfile(bashrc_path)
+        dst_path = os.path.join("/home", self.username, ".bashrc")
+        self.container_file_copy(self.name, bashrc_path, dst_path, user=self.username)
+
+    def copy_dotfiles(self):
+        root_dir = os.path.dirname(os.path.realpath(__file__))
+        assets_dir = os.path.join(root_dir, "assets")
+        self.copy_dotfiles_plain(assets_dir)
 
     def create(self):
         self.create_container()
@@ -288,6 +313,7 @@ class HostCreator():
         # restart container now to load new network configuration
         self.restart_container()
         self.create_user_account()
+        self.copy_dotfiles()
 
         #u.exec("sudo lxc-start -n $name -d")
         #u.exec("sudo lxc-attach -n  $name --clear-env -- bash -c 'mkdir -p /etc/olsrd/'")
@@ -325,7 +351,7 @@ class Creator():
         b.create()
 
     def create_host(self, name, config):
-        h = HostCreator(self.u, name, config)
+        h = HostCreator(self.u, self.c, self.p, name, config)
         h.create()
 
     def create_terminal(self, name, terminal):
@@ -362,19 +388,19 @@ class Creator():
 
     def run(self):
         try:
-            c = Configuration(self.args.topology)
+            self.c = Configuration(self.args.topology)
         except ArgumentException as e:
             print("not a valid topology: {}".format(e))
             sys.exit(1)
-        topo = c.load_topo()
-        self.checktopo(topo)
-        for name, data in topo['bridges']:
+        self.topo = self.c.load_topo()
+        self.checktopo(self.topo)
+        for name, data in self.topo['bridges']:
             self.create_bridge(name, data)
-        for name, data in topo['terminals']:
+        for name, data in self.topo['terminals']:
             self.create_terminal(name, data)
-        for name, data in topo['routers']:
+        for name, data in self.topo['routers']:
             self.create_router(name, data)
-        for name, data in topo['ues']:
+        for name, data in self.topo['ues']:
             self.create_ue(name, data)
 
 

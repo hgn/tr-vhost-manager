@@ -37,6 +37,11 @@
 				"terminals" : [ "02t01" ]
 			}
 		}
-	}
+	},
+
+    "user": {
+        "username" : "admin",
+        "userpass" : "admin"
+    }
 }
 
