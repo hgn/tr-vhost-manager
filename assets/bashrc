@@ -100,10 +100,10 @@ if [ -f /etc/bash_completion ]; then
     . /etc/bash_completion
 fi
 
-# Local bashrc changes
 if [ -f ~/.bash_local ]; then
     . ~/.bash_local
 fi
 
-# Import specific command aliases, shortcuts and options
-source ~/.bash_aliases
+if [ -f ~/.bash_aliases ]; then
+	source ~/.bash_aliases
+fi
