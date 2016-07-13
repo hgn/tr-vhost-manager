@@ -13,10 +13,10 @@
 						"ipv4-addr" : "169.254.1.1",
 						"ipv4-addr-netmask" : "255.255.255.0",
 						"post-up" : [
-                            "ip route add 172.17.1.0/24 via 169.254.1.2 dev air0 || true"
-                        ],
-						"lxr-hw-addr": "AC:AA:01:01:xx:xx",
-						"lxr-link": "brFFt01x01"
+													"ip route add 172.17.1.0/24 via 169.254.1.2 dev air0 || true"
+												],
+												"lxr-hw-addr": "AC:AA:01:01:xx:xx",
+												"lxr-link": "brFFt01x01"
 					}
 				}
 			}
@@ -39,9 +39,9 @@
 		}
 	},
 
-    "user": {
-        "username" : "admin",
-        "userpass" : "admin"
-    }
+	"user": {
+		"username" : "admin",
+		"userpass" : "admin"
+	}
 }
 
