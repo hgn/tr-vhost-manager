@@ -17,6 +17,7 @@ import time
 import stat
 import atexit
 import platform
+import pwd
 
 
 INET_IFACE_NAME = "inet0"
@@ -293,12 +294,16 @@ class HostCreator():
 
     def copy_dotfiles_plain(self, assets_dir):
         vimrc_path = os.path.join(assets_dir, "vimrc")
+        dst_home_path = os.path.join("/home", self.username)
         assert os.path.isfile(vimrc_path)
-        dst_path = os.path.join("/home", self.username, ".vimrc")
+        dst_path = os.path.join(dst_home_path, ".vimrc")
         self.container_file_copy(self.name, vimrc_path, dst_path, user=self.username)
 
         # bashrc, if user has local one we prefer this one (e.g. proxy settings)
-        bashrc_path = dst_path = os.path.join(os.getenv('HOME'), ".bashrc")
+        # note: we assume here the user is using sudo, the real user home path
+        effective_home_path = pwd.getpwuid(os.getresuid()[0])[5]
+        bashrc_path = os.path.join(effective_home_path, ".bashrc")
+        dst_path = os.path.join(dst_home_path, ".bashrc")
         if not os.path.isfile(bashrc_path):
             # take own provided bashrc
             bashrc_path = os.path.join(assets_dir, "bashrc")
@@ -309,21 +314,28 @@ class HostCreator():
         assets_dir = os.path.join(root_dir, "assets")
         self.copy_dotfiles_plain(assets_dir)
 
-    def copy_distribution_specific(self)
+    def copy_distribution_specific(self):
+        distribution = platform.linux_distribution()
+        if distribution[0] != "Ubuntu":
+            return
         # apt.conf contains proxy settings
         filepath = "/etc/apt/apt.conf"
         if os.path.isfile(filepath):
             self.container_file_copy(self.name, filepath, filepath)
 
+    def install_base_packages(self):
+        self.exec("apt-get -y update")
+        self.exec("apt-get -y install git vim bash python3")
+
     def create(self):
         self.create_container()
         self.start_container()
         self.copy_interface_conf()
-        # restart container now to load new network configuration
         self.restart_container()
         self.create_user_account()
         self.copy_dotfiles()
         self.copy_distribution_specific()
+        self.install_base_packages()
 
         #u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/post-install-phase-02.sh | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/tmp/post-install-phase-02.sh'")
         #u.exec("lxc-exec $name "admin" "bash /tmp/post-install-phase-02.sh"")
