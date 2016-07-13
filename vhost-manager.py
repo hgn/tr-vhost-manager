@@ -297,9 +297,11 @@ class HostCreator():
         dst_path = os.path.join("/home", self.username, ".vimrc")
         self.container_file_copy(self.name, vimrc_path, dst_path, user=self.username)
 
-        bashrc_path = os.path.join(assets_dir, "bashrc")
-        assert os.path.isfile(bashrc_path)
-        dst_path = os.path.join("/home", self.username, ".bashrc")
+        # bashrc, if user has local one we prefer this one (e.g. proxy settings)
+        bashrc_path = dst_path = os.path.join(os.getenv('HOME'), ".bashrc")
+        if not os.path.isfile(bashrc_path):
+            # take own provided bashrc
+            bashrc_path = os.path.join(assets_dir, "bashrc")
         self.container_file_copy(self.name, bashrc_path, dst_path, user=self.username)
 
     def copy_dotfiles(self):
@@ -316,11 +318,6 @@ class HostCreator():
         self.create_user_account()
         self.copy_dotfiles()
 
-        #u.exec("sudo lxc-start -n $name -d")
-        #u.exec("sudo lxc-attach -n  $name --clear-env -- bash -c 'mkdir -p /etc/olsrd/'")
-        #u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/post-install-phase-01.sh | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/tmp/post-install-phase-01.sh'")
-        #u.exec("lxc-exec-root $name "/tmp/post-install-phase-01.sh"")
-        #u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/vimrc | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/home/admin/.vimrc'")
         #u.exec("cat $HOME/.bashrc | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/home/admin/.bashrc'")
         #u.exec("cat /etc/apt/apt.conf | sudo lxc-attach -n  $name --clear-env -- bash -c 'cat >/etc/apt/apt.conf'")
         #u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/post-install-phase-02.sh | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/tmp/post-install-phase-02.sh'")
