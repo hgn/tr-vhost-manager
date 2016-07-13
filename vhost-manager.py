@@ -309,6 +309,12 @@ class HostCreator():
         assets_dir = os.path.join(root_dir, "assets")
         self.copy_dotfiles_plain(assets_dir)
 
+    def copy_distribution_specific(self)
+        # apt.conf contains proxy settings
+        filepath = "/etc/apt/apt.conf"
+        if os.path.isfile(filepath):
+            self.container_file_copy(self.name, filepath, filepath)
+
     def create(self):
         self.create_container()
         self.start_container()
@@ -317,9 +323,8 @@ class HostCreator():
         self.restart_container()
         self.create_user_account()
         self.copy_dotfiles()
+        self.copy_distribution_specific()
 
-        #u.exec("cat $HOME/.bashrc | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/home/admin/.bashrc'")
-        #u.exec("cat /etc/apt/apt.conf | sudo lxc-attach -n  $name --clear-env -- bash -c 'cat >/etc/apt/apt.conf'")
         #u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/post-install-phase-02.sh | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/tmp/post-install-phase-02.sh'")
         #u.exec("lxc-exec $name "admin" "bash /tmp/post-install-phase-02.sh"")
         #u.exec("cat $(dirname "${BASH_SOURCE[0]}")/../shared/post-install-phase-03.sh | sudo lxc-attach -n $name --clear-env -- bash -c 'cat >/tmp/post-install-phase-03.sh'")
