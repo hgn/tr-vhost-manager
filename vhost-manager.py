@@ -247,6 +247,13 @@ class HostCreator():
     def stop_container(self):
         self.u.exec("sudo lxc-stop -n {}".format(self.name))
 
+    def exec(self, cmd, user=None):
+        if user:
+            cmd = "lxc-attach -n {} --clear-env -- bash -c "su - $USER -c \"{}\"".format(self.name, user, cmd)
+        else:
+            cmd = "lxc-attach -n {} --clear-env -- bash {}".format(self.name, cmd)
+        self.u.exec(cmd)
+
     def container_file_copy(self, name, src_path, dst_path):
         cmd  = "cat {} | lxc-attach -n {} ".format(src_path, name)
         cmd += " --clear-env -- bash -c 'cat >{}'".format(dst_path)
