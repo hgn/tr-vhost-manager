@@ -189,7 +189,21 @@ class Configuration():
 
 
 class BridgeCreator():
-    pass
+
+    def __init__(self, utils, printer, name):
+        self.u = utils
+        self.p = printer
+        self.bridge_name = name
+
+    def create(self):
+        brige_path = os.path.join("/sys/class/net", self.bridge_name)
+        if os.path.isdir(brige_path)
+            self.p.msg("bridge {} already created\n".format(self.bridge_name))
+            return
+        self.u.exec("brctl addbr {}".format(self.bridge_name))
+        self.u.exec("brctl setfd {} 0".format(self.bridge_name))
+        self.u.exec("brctl sethello {} 5".format(self.bridge_name))
+        self.u.exec("ip link set dev {} up".format(self.bridge_name))
 
 
 class HostCreator():
@@ -291,8 +305,10 @@ class Creator():
         if self.args.verbose:
             self.p.set_verbose()
 
-    def create_bridge(self, name, bridge):
-        print("create bridge: {}".format(bridge))
+    def create_bridge(self, name, config):
+        print("create bridge: {}".format(name))
+        b = BridgeCreator(self.u, self.p, name)
+        b.create()
 
     def create_host(self, name, config):
         h = HostCreator(self.u, name, config)
