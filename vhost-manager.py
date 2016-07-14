@@ -34,11 +34,27 @@ TMPDIR = tempfile.mkdtemp()
 
 class ArgumentException(Exception): pass
 class EnvironmentException(Exception): pass
+class InternalException(Exception): pass
 
 class Printer:
 
     def __init__(self, verbose=False):
         self.verbose = verbose
+        self.init_colors()
+
+    def init_colors(self):
+        self.color_palette = {
+                'yellow':'\033[0;33;40m',
+                'foo':'\033[93m',
+                'red':'\033[91m',
+                'green':'\033[92m',
+                'blue':'\033[94m',
+                'end':'\033[0m'
+                }
+        is_a_tty = hasattr(sys.stdout, 'isatty') and sys.stdout.isatty()
+        if not is_a_tty:
+            for key, value in self.color_palette.items():
+                self.color_palette[key] = ""
 
     def set_verbose(self):
         self.verbose = True
@@ -51,7 +67,12 @@ class Printer:
             return
         sys.stderr.write(msg)
 
-    def msg(self, msg, stoptime=None):
+    def msg(self, msg, stoptime=None, color="yellow"):
+        if color:
+            if color in self.color_palette:
+                msg = "{}{}{}".format(self.color_palette[color], msg, self.color_palette['end'])
+            else:
+                raise InternalException("Color not known")
         ret = sys.stdout.write(msg) - 1
         if stoptime:
             time.sleep(stoptime)
@@ -490,7 +511,7 @@ class VHostManager:
         touch_file = os.path.join(touch_dir, "already-started")
         if not os.path.isfile(touch_file):
             self.p.clear()
-            self.p.msg("Welcome!\n", stoptime=1.0)
+            self.p.msg("Welcome!\n", color="yellow", stoptime=1.0)
             self.p.msg("Seems you are new - great!\n", stoptime=1.0)
             self.p.clear()
             self.p.msg("I will make sure every required package is installed ...\n", stoptime=2.0)
