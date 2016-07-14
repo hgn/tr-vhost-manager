@@ -254,6 +254,7 @@ class Host:
         self.exec("python3 tr-bootstrapper/bootstrap.py -vvv", user=self.username)
 
     def create(self):
+        self.p.msg("Create container: {}\n".format(self), stoptime=1.0)
         self.create_container()
         self.start_container()
         self.copy_interface_conf()
@@ -303,9 +304,10 @@ class Bridge:
         return "Bridge({})".format(self.name)
 
     def create(self):
+        self.p.msg("Create bridge: {}\n".format(self.name))
         brige_path = os.path.join("/sys/class/net", self.name)
         if os.path.isdir(brige_path):
-            self.p.msg("bridge {} already created\n".format(self.name))
+            self.p.msg("bridge {} already created\n".format(self.name), color="red")
             return
         self.u.exec("brctl addbr {}".format(self.name))
         self.u.exec("brctl setfd {} 0".format(self.name))
