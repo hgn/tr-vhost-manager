@@ -290,7 +290,15 @@ class HostCreator():
     def create_user_account(self):
         self.exec("useradd --create-home --shell /bin/bash --user-group {}".format(self.username))
         self.exec("echo '{}:{}' | chpasswd".format(self.username, self.userpass))
-        self.exec("echo '{} ALL=(ALL) NOPASSWD:ALL' | tee -a /etc/sudoers".format(self.username))
+        self.exec("echo '{} ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers".format(self.username))
+
+    def user_home_dir(self):
+        # this function handles also SUDO invoked calls
+        if "SUDO_UID" not in os.environ:
+            path = pwd.getpwuid(os.getresuid()[0])[5]
+        else:
+            path = pwd.getpwuid(int(os.getenv("SUDO_UID")))[5]
+        return path
 
     def copy_dotfiles_plain(self, assets_dir):
         vimrc_path = os.path.join(assets_dir, "vimrc")
@@ -301,7 +309,7 @@ class HostCreator():
 
         # bashrc, if user has local one we prefer this one (e.g. proxy settings)
         # note: we assume here the user is using sudo, the real user home path
-        effective_home_path = pwd.getpwuid(os.getresuid()[0])[5]
+        effective_home_path = self.user_home_dir()
         bashrc_path = os.path.join(effective_home_path, ".bashrc")
         dst_path = os.path.join(dst_home_path, ".bashrc")
         if not os.path.isfile(bashrc_path):

@@ -1,6 +1,10 @@
 {
 	"devices" : {
+
+
 		"terminals" : {
+
+
 			"02t01" : {
 				"interfaces" : {
 					"eth0" : {
@@ -20,10 +24,14 @@
 					}
 				}
 			}
+
+
 		},
+
 
 		"router" : {
 		},
+
 
 		"ue" : {
 		}
