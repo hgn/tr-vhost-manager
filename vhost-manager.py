@@ -20,11 +20,9 @@ import platform
 import pwd
 import collections
 
-
+# interface/bridge for local internet bridging
 INET_IFACE_NAME = "inet0"
 INET_BRIDGE_NAME = "lxcbr0"
-
-
 
 __programm__ = "vhost-manager"
 __version__  = "1"
@@ -76,7 +74,6 @@ class TopologyDb(object):
             if k is not None and isinstance(k, Host):
                 ret.append(k)
         return ret
-
 
     def add_connections(self, connections):
         if not connections: return
