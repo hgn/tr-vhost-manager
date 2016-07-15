@@ -127,7 +127,7 @@
 
 	"topologies" : {
 		"two-two" : {
-			"description" : "two terminals, two router, thats all",
+			"description" : "two UEs, two Router, two Terminals - thats all",
 			"map" : [
 					"UE(01av01)         <-> Bridge(br01aFFr01)",
 					"Bridge(br01aFFr01) <-> Router(01r01)",
@@ -139,7 +139,10 @@
 					"Router(02r01)      <-> Bridge(br02r01t01)",
 					"Bridge(br02r01t01) <-> Terminal(02t01)",
 					"Terminal(02t01)    <-> Bridge(brFFt01x01)"
-				]
+				],
+            "netem" : [
+                "Bridge(brFFt01x01) = [ delay:100ms,10ms;loss:0.1%;rate:5kbit ]"
+            ]
 		}
 	},
 
