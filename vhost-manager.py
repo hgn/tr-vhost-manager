@@ -813,11 +813,6 @@ class TopologyGraph():
         parser.add_argument("topology", help="name of the topology", type=str)
         self.args = parser.parse_args(sys.argv[2:])
 
-    def start_container(self, host):
-        c = lxc.Container(host.name)
-        if c.defined:
-            c.start()
-
     def tmp_dig_fd_new(self, string):
         name = os.path.join(TMPDIR, string)
         fd = open(name, "w")
@@ -842,6 +837,66 @@ class TopologyGraph():
         topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
         self.p.msg("Generate graph of topopolgy\n")
         self.gen_digraph_image(topology_db)
+
+
+class TopologyConnect():
+
+    def __init__(self):
+        self.u = Utils()
+        self.p = Printer()
+        self.parse_local_options()
+
+    def parse_local_options(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument("topology", help="name of the topology", type=str)
+        self.args = parser.parse_args(sys.argv[2:])
+
+    def start_container(self, host):
+        c = lxc.Container(host.name)
+        if c.defined:
+            c.start()
+        else:
+            self.p.msg("Topology not created, at least {}".format(host.name), color="red")
+            sys.exit(1)
+
+    def prepare_tmux(self):
+        os.system("tmux -f \"assets/tmux.conf\"  new-session -s lxc -n \"control\"  -d")
+    
+    def finish_tmux(self):
+        self.p.msg("ok, will now connect to tmux session, bye\n", color="magenta", stoptime=2.0)
+        os.system("tmux select-window -t lxc:2")
+        os.execv("/usr/bin/tmux", [ "-2", "attach-session", "-t", "lxc" ])
+
+    def run(self):
+        try:
+            self.c = Configuration(topology=self.args.topology)
+        except ArgumentException as e:
+            self.p.msg("Not a valid topology: {}".format(e))
+            sys.exit(1)
+
+        topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
+
+        # start bridges
+        done = []
+        for bridge in topology_db.get_bridges():
+            if bridge.name in done:
+                continue
+            bridge.create()
+            done.append(bridge.name)
+
+        self.prepare_tmux()
+
+        self.p.msg("Start container (if not already started):\n")
+        done = []
+        i = 2
+        for host in topology_db.get_hosts():
+            if host.name in done: continue
+            self.p.msg("  {}\n".format(host.name))
+            self.start_container(host)
+            os.system("tmux new-window -t lxc:{} -n {} 'sudo lxc-console -n {}'".format(i, host.name, host.name))
+            i += 1
+            done.append(host.name)
+        self.finish_tmux()
 
 
 class TopologyList():
@@ -898,6 +953,7 @@ class VHostManager:
        "topology-stop":        [ "TopologyStop", "stop involved container and destroy bridges" ],
        "topology-graph":       [ "TopologyGraph", "create image of a given toplogy" ],
        "topology-list":        [ "TopologyList",  "list available topologies" ],
+       "topology-connect":     [ "TopologyConnect",  "start and tmux connect to topology" ],
        "container-list":       [ "ContainerLister",  "list available container" ],
        "container-stop-all":   [ "ContainerStopAll",  "start particular container" ],
        "container-start-all":  [ "ContainerStartAll",  "start particular container" ],
