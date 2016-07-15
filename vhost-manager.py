@@ -45,14 +45,30 @@ class TopologyDb(object):
         self._directed = directed
         self.add_connections(connections)
 
+    def format(self, thing):
+        fmt = "\"{}\" [ {} ]\n".format(str(thing), thing.graphviz_repr())
+        return fmt
+
     def gen_digraph(self):
         d  =  "digraph foo { node [ fontname = \"DejaVu Sans\" ];"
-        d += " edge [ fontname = \"DejaVu Sans\" ];\n"
+        d += " edge [ fontname = \"DejaVu Sans\" ];\n\n"
+
+        done = []
         for k, v in self._graph.items():
             for v2 in v:
-                ks = k.graphviz_repr()
-                vs = v2.graphviz_repr()
-                d += "\"{}\" -> \"{}\" [ arrowhead = \"none\", arrowtail = \"normal\"];\n".format(ks, vs)
+                if str(k) in done: continue
+                d += self.format(k)
+                done.append(str(k))
+            if str(v2) in done: continue
+            d += self.format(v2)
+            done.append(v2.graphviz_repr())
+        d += "\n"
+
+        for k, v in self._graph.items():
+            for v2 in v:
+                ks = str(k)
+                vs = str(v2)
+                d += "  \"{}\" -> \"{}\" [ arrowhead = \"none\", arrowtail = \"normal\"];\n".format(ks, vs)
         d += "}\n"
         return d
 
@@ -267,7 +283,12 @@ class Host:
 class Terminal(Host):
 
     def graphviz_repr(self):
-        return 'Terminal({})'.format(self.name)
+        t = "Terminal"
+        fmt  = "label = <<font color=\"blue\">{}</font><br/>".format(self.name)
+        fmt += "<font point-size=\"8\">IP:<br/>"
+        fmt += "{}</font>>".format(t)
+        fmt += ",shape = \"box\""
+        return fmt
 
     def __str__(self):
         return "Terminal({})".format(self.name)
@@ -276,7 +297,12 @@ class Terminal(Host):
 class Router(Host):
 
     def graphviz_repr(self):
-        return 'Router({})'.format(self.name)
+        t = "Router"
+        fmt  = "label = <<font color=\"blue\">{}</font><br/>".format(self.name)
+        fmt += "<font point-size=\"8\">IP:<br/>"
+        fmt += "{}</font>>".format(t)
+        fmt += ",shape = \"box\""
+        return fmt
 
     def __str__(self):
         return "Router({})".format(self.name)
@@ -285,7 +311,12 @@ class Router(Host):
 class UE(Host):
 
     def graphviz_repr(self):
-        return 'UE({})'.format(self.name)
+        t = "UE"
+        fmt  = "label = <<font color=\"blue\">{}</font><br/>".format(self.name)
+        fmt += "<font point-size=\"8\">IP:<br/>"
+        fmt += "{}</font>>".format(t)
+        fmt += ",shape = \"box\""
+        return fmt
 
     def __str__(self):
         return "UE({})".format(self.name)
@@ -305,7 +336,7 @@ class Bridge:
         self.p.msg("Create bridge: {}\n".format(self.name))
         brige_path = os.path.join("/sys/class/net", self.name)
         if os.path.isdir(brige_path):
-            self.p.msg("bridge {} already created\n".format(self.name), color="red")
+            self.p.msg("bridge {} already created\n".format(self.name), color="magenta")
             return
         self.u.exec("brctl addbr {}".format(self.name))
         self.u.exec("brctl setfd {} 0".format(self.name))
@@ -313,7 +344,9 @@ class Bridge:
         self.u.exec("ip link set dev {} up".format(self.name))
 
     def graphviz_repr(self):
-        return 'Bridge({})'.format(self.name)
+        fmt  = "label = <<font point-size=\"6\">Bridge: {}</font>>".format(self.name)
+        fmt += ",shape = \"rect\""
+        return fmt
 
 
 class Printer:
@@ -705,6 +738,7 @@ class TopologyCreate():
             self.p.set_verbose()
 
     def destroy_existing_container(self, topology_db):
+        self.p.msg("Check if identical container exists\n")
         for host in topology_db.get_hosts():
             c = lxc.Container(host.name)
             if c.defined:
@@ -712,14 +746,14 @@ class TopologyCreate():
                 question = "Delete container or exit?"
                 answer = self.u.query_yes_no(question, default="no")
                 if answer == True:
-                    print("Delete container in 1 seconds ...")
+                    self.p.msg("Delete container in 1 seconds ...\n", color="red")
                     time.sleep(1)
                     c.stop()
                     if not c.destroy():
-                        print("Failed to destroy the container!")
+                        self.p.msg("Failed to destroy the container!\n", color="red")
                         sys.exit(1)
                 else:
-                    print("exiting, call \"sudo lxc-ls --fancy\" to see all container")
+                    self.p.msg("exiting, call \"sudo lxc-ls --fancy\" to see all container\n", color="red")
                     exit(1)
 
     def start_container(self, host):
@@ -738,6 +772,8 @@ class TopologyCreate():
         except ArgumentException as e:
             print("not a valid topology: {}".format(e))
             sys.exit(1)
+
+        self.p.msg("Create topology {}\n".format(self.args.topology), stoptime=1.0)
 
         topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
         self.destroy_existing_container(topology_db)
@@ -792,7 +828,8 @@ class TopologyGraph():
         fd, name = self.tmp_dig_fd_new("digraph.data")
         fd.write(d)
         os.fsync(fd); fd.close()
-        os.system("cat {} | dot -Tpng > graph.png".format(name))
+        os.system("cat {}".format(name))
+        os.system("cat {} | dot -Tpng -Gsize=20,80\! -Gdpi=200 > graph.png".format(name))
         self.p.msg("file: graph.png\n")
 
     def run(self):
