@@ -58,9 +58,9 @@
 						"ipv4-addr" : "172.16.1.100",
 						"ipv4-addr-netmask" : "255.255.255.0",
 						"post-up" : [
-													"post-up ip route add 169.254.1.0/24 via 172.16.1.1 dev term00 || true",
-													"post-up ip route add 172.17.1.0/24 via 172.16.1.1 dev term00 || true",
-													"post-up ip route add 224.0.1.0/24 dev term00 || true"
+													"ip route add 169.254.1.0/24 via 172.16.1.1 dev term00 || true",
+													"ip route add 172.17.1.0/24 via 172.16.1.1 dev term00 || true",
+													"ip route add 224.0.1.0/24 dev term00 || true"
 												],
 												"lxr-hw-addr": "AC:AA:01:01:xx:xx",
 												"lxr-link": "br01r01t01"
@@ -80,9 +80,9 @@
 						"ipv4-addr" : "172.17.1.100",
 						"ipv4-addr-netmask" : "255.255.255.0",
 						"post-up" : [
-													"post-up ip route add 169.254.1.0/24 via 172.17.1.1 dev term00 || true",
-													"post-up ip route add 172.16.1.0/24 via 172.17.1.1 dev term00 || true",
-													"post-up ip route add 224.0.1.0/24 dev term00 || true"
+													"ip route add 169.254.1.0/24 via 172.17.1.1 dev term00 || true",
+													"ip route add 172.16.1.0/24 via 172.17.1.1 dev term00 || true",
+													"ip route add 224.0.1.0/24 dev term00 || true"
 												],
 												"lxr-hw-addr": "AC:AA:02:01:xx:xx",
 												"lxr-link": "br02r01t01"
