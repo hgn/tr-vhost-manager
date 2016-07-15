@@ -326,11 +326,20 @@ class Printer:
 
     def init_colors(self):
         self.color_palette = {
-                'yellow':'\033[0;33;40m',
-                'foo':'\033[93m',
-                'red':'\033[91m',
-                'green':'\033[92m',
-                'blue':'\033[94m',
+                'red':    '\033[31m',
+                'green':  '\033[32m',
+                'yellow': '\033[33m',
+                'blue':   '\033[34m',
+                'magenta':'\033[35m',
+                'cyan':   '\033[36m',
+
+                'lightred':    '\033[91m',
+                'lightgreen':  '\033[92m',
+                'lightyellow': '\033[93m',
+                'lightblue':   '\033[94m',
+                'lightmagenta':'\033[95m',
+                'lightcyan':   '\033[96m',
+
                 'end':'\033[0m'
                 }
         is_a_tty = hasattr(sys.stdout, 'isatty') and sys.stdout.isatty()
@@ -409,15 +418,21 @@ class Utils:
 
 class Configuration():
 
-    def __init__(self, topology_name):
+    def __init__(self, topology=None):
         self.db = self.load_configuration("conf.json")
-        self.topology_name = topology_name
+        self.topology_name = topology
 
     def load_configuration(self, filename):
         with open(filename) as json_data:
             d = json.load(json_data)
             json_data.close()
             return d
+
+    def topologies(self):
+        r = []
+        for k, v in self.db["topologies"].items():
+            r.append([k, v["description"]])
+        return r
 
     def is_valid(self):
         for topology in self.db["topologies"]:
@@ -721,7 +736,7 @@ class Creator():
 
     def run(self):
         try:
-            self.c = Configuration(self.args.topology)
+            self.c = Configuration(topology=self.args.topology)
         except ArgumentException as e:
             print("not a valid topology: {}".format(e))
             sys.exit(1)
@@ -783,7 +798,7 @@ class Graphor():
 
     def run(self):
         try:
-            self.c = Configuration(self.args.topology)
+            self.c = Configuration(topology=self.args.topology)
         except ArgumentException as e:
             self.p.msg("Not a valid topology: {}".format(e))
             sys.exit(1)
@@ -805,11 +820,22 @@ class Lister():
         parser.add_argument( "-v", "--verbose", dest="verbose", default=False,
                           action="store_true", help="show verbose")
         self.args = parser.parse_args(sys.argv[2:])
-        if self.args.verbose:
-            self.p.set_verbose()
+        if self.args.verbose: self.p.set_verbose()
 
     def run(self):
-        print("Available container: ")
+        c = Configuration()
+        self.p.msg("Available topologies:\n")
+        for t in c.topologies():
+            self.p.msg("  {}  -  {}\n".format(t[0], t[1]), color=None)
+
+        return
+
+        topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
+        self.p.msg("Generate graph of topopolgy\n")
+        self.gen_digraph_image(topology_db)
+
+
+
         for container in lxc.list_containers(as_object=True):
             print(container.name)
             if not container.running:
@@ -818,19 +844,42 @@ class Lister():
                 print("\t    running ")
 
 
+class ContainerLister():
+
+    def __init__(self):
+        self.p = Printer()
+        self.parse_local_options()
+
+    def parse_local_options(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument( "-v", "--verbose", dest="verbose", default=False,
+                          action="store_true", help="show verbose")
+        self.args = parser.parse_args(sys.argv[2:])
+        if self.args.verbose: self.p.set_verbose()
+
+    def run(self):
+        for container in lxc.list_containers(as_object=True):
+            self.p.msg("{} ".format(container.name))
+            if not container.running:
+                self.p.msg("  not running ", color="red")
+            else:
+                self.p.msg("      running ", color="green")
+            self.p.msg("\n")
+
+
 
 
 class VHostManager:
 
     modes = {
-       "create": [ "Creator", "create given topolology, including bridge and container" ],
-       "graph":  [ "Graphor", "create image of a given toplogy" ],
-       "list":   [ "Lister",  "list available topologies" ]
+       "topology-create": [ "Creator", "create given topolology, including bridge and container" ],
+       "generate-graph":  [ "Graphor", "create image of a given toplogy" ],
+       "topology-list":   [ "Lister",  "list available topologies" ],
+       "container-list":  [ "ContainerLister",  "list available container" ]
             }
 
     def __init__(self):
         self.p = Printer()
-        self.p.msg("Welcome!\n", color="yellow", clear=True)
         self.check_env()
 
     def install_packages_ubuntu(self):

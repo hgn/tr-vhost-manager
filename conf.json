@@ -97,8 +97,8 @@
 	},
 
 	"topologies" : {
-		"simple-three" : {
-			"description" : "two terminals, two router",
+		"two-two" : {
+			"description" : "two terminals, two router, thats all",
 			"map" : [
 					"Router(01r01)      <-> Bridge(br01aFFr01)",
 					"Router(01r01)      <-> Bridge(br01r01t01)",
