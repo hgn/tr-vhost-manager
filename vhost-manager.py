@@ -20,6 +20,7 @@ import platform
 import pwd
 import collections
 
+
 # interface/bridge for local internet bridging
 INET_IFACE_NAME = "inet0"
 INET_BRIDGE_NAME = "lxcbr0"
@@ -754,10 +755,11 @@ class TopologyCreate():
             host.create()
             done.append(host.name)
 
+        self.p.msg("Start container:\n")
         done = []
         for host in topology_db.get_hosts():
             if host.name in done: continue
-            self.p.msg("Start container: {}".format(host.name))
+            self.p.msg("  {}\n".format(host.name))
             self.start_container(host)
             done.append(host.name)
 
