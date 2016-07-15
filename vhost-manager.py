@@ -691,7 +691,7 @@ class Creator():
         if self.args.verbose:
             self.p.set_verbose()
 
-    def check_existing_hosts(self, topology_db):
+    def destroy_existing_container(self, topology_db):
         for host in topology_db.get_hosts():
             c = lxc.Container(host.name)
             if c.defined:
@@ -719,15 +719,6 @@ class Creator():
         fd = open(name,"w")
         return fd, name
 
-    def gen_digraph_image(self, topology_db):
-        d = topology_db.gen_digraph()
-        fd, name = self.tmp_dig_fd_new("digraph.data")
-        fd.write(d)
-        os.fsync(fd); fd.close()
-        os.system("cat {} | dot -Tpng > graph.png".format(name))
-        self.p.msg("generated graph of topopolgy: graph.png\n")
-
-
     def run(self):
         try:
             self.c = Configuration(self.args.topology)
@@ -736,7 +727,7 @@ class Creator():
             sys.exit(1)
 
         topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
-        self.check_existing_hosts(topology_db)
+        self.destroy_existing_container(topology_db)
 
         done = []
         for bridge in topology_db.get_bridges():
@@ -744,7 +735,6 @@ class Creator():
                 continue
             bridge.create()
             done.append(bridge.name)
-
 
         done = []
         for host in topology_db.get_hosts():
@@ -755,11 +745,52 @@ class Creator():
         done = []
         for host in topology_db.get_hosts():
             if host.name in done: continue
+            self.p.msg("Start container: {}".format(host.name))
             self.start_container(host)
             done.append(host.name)
 
-        self.gen_digraph_image(topology_db)
 
+
+class Graphor():
+
+    def __init__(self):
+        self.u = Utils()
+        self.p = Printer()
+        self.parse_local_options()
+
+    def parse_local_options(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument("topology", help="name of the topology", type=str)
+        self.args = parser.parse_args(sys.argv[2:])
+
+    def start_container(self, host):
+        c = lxc.Container(host.name)
+        if c.defined:
+            c.start()
+
+    def tmp_dig_fd_new(self, string):
+        name = os.path.join(TMPDIR, string)
+        fd = open(name, "w")
+        return fd, name
+
+    def gen_digraph_image(self, topology_db):
+        d = topology_db.gen_digraph()
+        fd, name = self.tmp_dig_fd_new("digraph.data")
+        fd.write(d)
+        os.fsync(fd); fd.close()
+        os.system("cat {} | dot -Tpng > graph.png".format(name))
+        self.p.msg("file: graph.png\n")
+
+    def run(self):
+        try:
+            self.c = Configuration(self.args.topology)
+        except ArgumentException as e:
+            self.p.msg("Not a valid topology: {}".format(e))
+            sys.exit(1)
+
+        topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
+        self.p.msg("Generate graph of topopolgy\n")
+        self.gen_digraph_image(topology_db)
 
 
 class Lister():
@@ -792,8 +823,9 @@ class Lister():
 class VHostManager:
 
     modes = {
-       "create": [ "Creator",    "create topologies" ],
-       "list":   [ "Lister",     "list available container" ]
+       "create": [ "Creator", "create given topolology, including bridge and container" ],
+       "graph":  [ "Graphor", "create image of a given toplogy" ],
+       "list":   [ "Lister",  "list available topologies" ]
             }
 
     def __init__(self):
