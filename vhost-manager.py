@@ -690,7 +690,7 @@ class HostCreator():
         self.stop_container()
 
 
-class Creator():
+class TopologyCreate():
 
     def __init__(self):
         self.u = Utils()
@@ -766,7 +766,7 @@ class Creator():
 
 
 
-class Graphor():
+class TopologyGraph():
 
     def __init__(self):
         self.u = Utils()
@@ -808,7 +808,7 @@ class Graphor():
         self.gen_digraph_image(topology_db)
 
 
-class Lister():
+class TopologyList():
 
     def __init__(self):
         self.p = Printer()
@@ -827,21 +827,6 @@ class Lister():
         self.p.msg("Available topologies:\n")
         for t in c.topologies():
             self.p.msg("  {}  -  {}\n".format(t[0], t[1]), color=None)
-
-        return
-
-        topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
-        self.p.msg("Generate graph of topopolgy\n")
-        self.gen_digraph_image(topology_db)
-
-
-
-        for container in lxc.list_containers(as_object=True):
-            print(container.name)
-            if not container.running:
-                print("\tnot running ")
-            else:
-                print("\t    running ")
 
 
 class ContainerLister():
@@ -872,10 +857,16 @@ class ContainerLister():
 class VHostManager:
 
     modes = {
-       "topology-create": [ "Creator", "create given topolology, including bridge and container" ],
-       "generate-graph":  [ "Graphor", "create image of a given toplogy" ],
-       "topology-list":   [ "Lister",  "list available topologies" ],
-       "container-list":  [ "ContainerLister",  "list available container" ]
+       "topology-create":      [ "TopologyCreate", "create given topolology, including bridge and container" ],
+       "topology-start":       [ "TopologyStart", "start involved container and create bridges" ],
+       "topology-stop":        [ "TopologyStop", "stop involved container and destroy bridges" ],
+       "topology-graph":       [ "TopologyGraph", "create image of a given toplogy" ],
+       "topology-list":        [ "TopologyList",  "list available topologies" ],
+       "container-list":       [ "ContainerLister",  "list available container" ],
+       "container-stop-all":   [ "ContainerStopAll",  "start particular container" ],
+       "container-start-all":  [ "ContainerStartAll",  "start particular container" ],
+       "container-stop":       [ "ContainerStop",  "start particular container" ],
+       "container-start":      [ "ContainerStart",  "start particular container" ],
             }
 
     def __init__(self):
@@ -939,8 +930,8 @@ class VHostManager:
                          " <submodule> [<submodule-options>]\n")
 
     def print_modules(self):
-        for i in VHostManager.modes.keys():
-            sys.stderr.write("   %-15s - %s\n" % (i, VHostManager.modes[i][1]))
+        for i in sorted(VHostManager.modes.items(), key=lambda x: x[0]):
+            sys.stderr.write("   %-25s - %s\n" % (i[0], i[1][1]))
 
     def args_contains(self, argv, *cmds):
         for cmd in cmds:
