@@ -274,6 +274,7 @@ class Host:
         self.copy_interface_conf()
         self.restart_container()
         self.create_user_account()
+        self.set_utc_timezone()
         self.copy_dotfiles()
         self.copy_distribution_specific()
         self.install_base_packages()
@@ -660,6 +661,11 @@ class HostCreator():
         self.exec("useradd --create-home --shell /bin/bash --user-group {}".format(self.username))
         self.exec("echo '{}:{}' | chpasswd".format(self.username, self.userpass))
         self.exec("echo '{} ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers".format(self.username))
+
+    def set_utc_timezone(self):
+        # http://yellerapp.com/posts/2015-01-12-the-worst-server-setup-you-can-make.html
+        self.exec("echo 'Etc/UTC' > /etc/timezone")
+        self.exec("dpkg-reconfigure --frontend noninteractive tzdata")
 
     def user_home_dir(self):
         # this function handles also SUDO invoked calls
