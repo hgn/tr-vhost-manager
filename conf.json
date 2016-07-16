@@ -1,4 +1,12 @@
 {
+	"link-classes" : {
+		"static-50kbit" : {
+			"description" : "50kbit",
+			"class" : "static",
+			"data" : "delay:100ms,10ms;loss:0.1%;rate:50kbit"
+		}
+	},
+
 	"devices" : {
 
 		"terminals" : {
@@ -140,9 +148,9 @@
 					"Bridge(br02r01t01) <-> Terminal(02t01)",
 					"Terminal(02t01)    <-> Bridge(brFFt01x01)"
 				],
-            "netem" : [
-                "Bridge(brFFt01x01) = [ delay:100ms,10ms;loss:0.1%;rate:5kbit ]"
-            ]
+				"netem" : [
+					[ "Bridge(brFFt01x01)", "static-500kbit" ]
+				]
 		}
 	},
 
