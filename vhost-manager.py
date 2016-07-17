@@ -846,9 +846,8 @@ class TopologyGraph():
         fd, name = self.tmp_dig_fd_new("digraph.data")
         fd.write(d)
         os.fsync(fd); fd.close()
-        os.system("cat {}".format(name))
+        self.p.msg("Generate topology file: {}\n".format(self.file_out_name), color=None)
         os.system("cat {} | dot -Tpng -Gsize=20,80\! -Gdpi=200 > {}".format(name, self.file_out_name))
-        self.p.msg("file: graph.png\n")
 
     def run(self):
         try:

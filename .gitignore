@@ -1,1 +1,7 @@
 tmp/
+topology-graph.png
+
+.*
+*.orig
+*~
+\#*#
