@@ -858,6 +858,7 @@ class TopologyGraph():
         self.u = Utils()
         self.p = Printer()
         self.parse_local_options()
+        self.file_out_name = "topology-graph.png"
 
     def parse_local_options(self):
         parser = argparse.ArgumentParser()
@@ -875,7 +876,7 @@ class TopologyGraph():
         fd.write(d)
         os.fsync(fd); fd.close()
         os.system("cat {}".format(name))
-        os.system("cat {} | dot -Tpng -Gsize=20,80\! -Gdpi=200 > graph.png".format(name))
+        os.system("cat {} | dot -Tpng -Gsize=20,80\! -Gdpi=200 > {}".format(name, self.file_out_name))
         self.p.msg("file: graph.png\n")
 
     def run(self):
