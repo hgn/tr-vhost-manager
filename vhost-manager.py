@@ -290,6 +290,11 @@ class Host:
         self.exec("git clone https://github.com/hgn/tr-bootstrapper.git", user=self.username)
         self.exec("python3 tr-bootstrapper/bootstrap.py -vvv", user=self.username)
 
+    def set_utc_timezone(self):
+        # http://yellerapp.com/posts/2015-01-12-the-worst-server-setup-you-can-make.html
+        self.exec("echo 'Etc/UTC' > /etc/timezone")
+        self.exec("dpkg-reconfigure --frontend noninteractive tzdata")
+
     def create(self):
         self.p.msg("Create container: {}\n".format(self), stoptime=1.0)
         self.create_container()
@@ -620,154 +625,6 @@ class BridgeCreator():
         self.u.exec("brctl sethello {} 5".format(self.bridge_name))
         self.u.exec("ip link set dev {} up".format(self.bridge_name))
 
-
-class HostCreator():
-
-    def __init__(self, utils, c, p, name, config):
-        self.u = utils
-        self.c = c
-        self.p = p
-        self.name = name
-        self.config = config
-        self.container = None
-        self.init_user_credentials()
-
-    def init_user_credentials(self):
-        userdata = self.c.db["user"]
-        self.username = userdata["username"]
-        self.userpass = userdata["userpass"]
-
-    def remove_tmp_files(self):
-        close(self.tf_lxc)
-        close(self.tf_net)
-
-    def tmp_file_new(self, string):
-        name = os.path.join(TMPDIR, string)
-        fd = open(name,"w")
-        return fd, name
-
-    def tmp_file_destroy(self, name):
-        os.remove(name)
-
-    def create_container(self):
-        fd, name = self.tmp_file_new("lxc-conf")
-        config = self.config['config']['conf-lxc']
-        fd.write(config)
-        os.fsync(fd); fd.close()
-
-        # sudo LC_ALL=C lxc-create --bdev dir -f $(dirname "${BASH_SOURCE[0]}")/lxc-config
-        # -n $name -t $distribution --logpriority=DEBUG --logfile $logpath -- -r xenial")
-        # FIXME: logging should be activatable
-        cmd  = "sudo LC_ALL=C lxc-create --bdev dir -n {} ".format(self.name)
-        cmd += "-f {} -t ubuntu -- -r xenial".format(name)
-        self.u.exec(cmd)
-        self.tmp_file_destroy(name)
-
-    def start_container(self):
-        self.u.exec("sudo lxc-start -n {} -d".format(self.name))
-        self.container = lxc.Container(self.name)
-
-    def stop_container(self):
-        self.u.exec("sudo lxc-stop -n {}".format(self.name))
-
-    def restart_container(self):
-        self.stop_container()
-        self.start_container()
-
-    def exec(self, cmd, user=None):
-        if user:
-            cmd = "lxc-attach -n {} --clear-env -- bash -c \"su - {} -c \'{}\'\"".format(self.name, user, cmd)
-        else:
-            cmd = "lxc-attach -n {} --clear-env -- bash -c \"{}\"".format(self.name, cmd)
-        self.u.exec(cmd)
-
-    def container_file_copy(self, name, src_path, dst_path, user=None):
-        cmd  = "cat {} | lxc-attach -n {} ".format(src_path, name)
-        cmd += " --clear-env -- bash -c 'cat >{}'".format(dst_path)
-        self.u.exec(cmd)
-        # we don't want a race here: we don't know when the new process
-        # is scheduled, so we sleep here for a short period, just to make sure[TM]
-        # that the new process is executed.
-        time.sleep(.5)
-        if user:
-            self.exec("chown -R {}:{} {}".format(user, user, dst_path))
-
-    def copy_interface_conf(self):
-        tmp_fd, tmp_name = self.tmp_file_new("lxc-conf")
-        config = self.config['config']['conf-debian-interface']
-        tmp_fd.write(config)
-        os.fsync(tmp_fd); tmp_fd.close()
-        self.container_file_copy(self.name, tmp_name, "/etc/network/interfaces")
-        self.tmp_file_destroy(tmp_name)
-
-    def create_user_account(self):
-        self.exec("useradd --create-home --shell /bin/bash --user-group {}".format(self.username))
-        self.exec("echo '{}:{}' | chpasswd".format(self.username, self.userpass))
-        self.exec("echo '{} ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers".format(self.username))
-
-    def set_utc_timezone(self):
-        # http://yellerapp.com/posts/2015-01-12-the-worst-server-setup-you-can-make.html
-        self.exec("echo 'Etc/UTC' > /etc/timezone")
-        self.exec("dpkg-reconfigure --frontend noninteractive tzdata")
-
-    def user_home_dir(self):
-        # this function handles also SUDO invoked calls
-        if "SUDO_UID" not in os.environ:
-            path = pwd.getpwuid(os.getresuid()[0])[5]
-        else:
-            path = pwd.getpwuid(int(os.getenv("SUDO_UID")))[5]
-        return path
-
-    def copy_dotfiles_plain(self, assets_dir):
-        vimrc_path = os.path.join(assets_dir, "vimrc")
-        dst_home_path = os.path.join("/home", self.username)
-        assert os.path.isfile(vimrc_path)
-        dst_path = os.path.join(dst_home_path, ".vimrc")
-        self.container_file_copy(self.name, vimrc_path, dst_path, user=self.username)
-
-        # bashrc, if user has local one we prefer this one (e.g. proxy settings)
-        # note: we assume here the user is using sudo, the real user home path
-        effective_home_path = self.user_home_dir()
-        bashrc_path = os.path.join(effective_home_path, ".bashrc")
-        dst_path = os.path.join(dst_home_path, ".bashrc")
-        if not os.path.isfile(bashrc_path):
-            # take own provided bashrc
-            bashrc_path = os.path.join(assets_dir, "bashrc")
-        self.container_file_copy(self.name, bashrc_path, dst_path, user=self.username)
-
-    def copy_dotfiles(self):
-        root_dir = os.path.dirname(os.path.realpath(__file__))
-        assets_dir = os.path.join(root_dir, "assets")
-        self.copy_dotfiles_plain(assets_dir)
-
-    def copy_distribution_specific(self):
-        distribution = platform.linux_distribution()
-        if distribution[0] != "Ubuntu":
-            return
-        # apt.conf contains proxy settings
-        filepath = "/etc/apt/apt.conf"
-        if os.path.isfile(filepath):
-            self.container_file_copy(self.name, filepath, filepath)
-
-    def install_base_packages(self):
-        self.exec("apt-get -y update")
-        self.exec("apt-get -y install git vim bash python3")
-
-    def bootstrap_packages(self):
-        self.exec("git clone https://github.com/hgn/tr-bootstrapper.git", user=self.username)
-        self.exec("python3 tr-bootstrapper/bootstrap.py -vvv", user=self.username)
-
-    def create(self):
-        self.create_container()
-        self.start_container()
-        self.copy_interface_conf()
-        self.restart_container()
-        self.create_user_account()
-        self.copy_dotfiles()
-        self.copy_distribution_specific()
-        self.install_base_packages()
-        self.bootstrap_packages()
-        self.stop_container()
 
 
 class TopologyCreate():
