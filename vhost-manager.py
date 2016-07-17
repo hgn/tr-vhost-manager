@@ -730,6 +730,7 @@ class HostCreator():
 class TopologyCreate():
 
     def __init__(self):
+        uid0_required()
         self.u = Utils()
         self.p = Printer()
         self.parse_local_options()
@@ -848,6 +849,7 @@ class TopologyGraph():
 class TopologyConnect():
 
     def __init__(self):
+        uid0_required()
         self.u = Utils()
         self.p = Printer()
         self.parse_local_options()
@@ -929,6 +931,7 @@ class TopologyList():
 class ContainerLister():
 
     def __init__(self):
+        uid0_required()
         self.p = Printer()
         self.parse_local_options()
 
@@ -965,6 +968,7 @@ class VHostManager:
        "container-start-all":  [ "ContainerStartAll",  "start particular container" ],
        "container-stop":       [ "ContainerStop",  "start particular container" ],
        "container-start":      [ "ContainerStart",  "start particular container" ],
+       "container-exec":       [ "ContainerExec",  "execute command on (all) container" ],
             }
 
     def __init__(self):
@@ -1085,15 +1089,17 @@ class VHostManager:
 def remove_tmp_dir():
     shutil.rmtree(TMPDIR, ignore_errors=True)
 
+def uid0_required():
+    euid = os.geteuid()
+    if euid != 0:
+        print("Need to be root")
+        print("➡ sudo {}".format(" ".join(sys.argv)))
+        exit(1)
+
+
 if __name__ == "__main__":
     try:
         atexit.register(remove_tmp_dir)
-        euid = os.geteuid() 
-        if euid != 0:
-            print("Need to be root")
-            print("➡ sudo {}".format(sys.argv[0]))
-            exit(1)
-
         vhm = VHostManager()
         sys.exit(vhm.run())
     except KeyboardInterrupt:
