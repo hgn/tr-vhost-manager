@@ -80,12 +80,14 @@ class TopologyDb(object):
                     ret.append(v2)
             if k is not None and isinstance(k, Bridge):
                 ret.append(k)
-        done = []
+
+        done = []; reti = []
         for bridge in ret:
             if bridge.name in done:
                 continue
             done.append(bridge.name)
-        return done
+            reti.append(bridge)
+        return reti
 
     def get_hosts(self):
         ret = []
@@ -95,7 +97,14 @@ class TopologyDb(object):
                     ret.append(v2)
             if k is not None and isinstance(k, Host):
                 ret.append(k)
-        return ret
+
+        done = []; reti = []
+        for host in ret:
+            if host.name in done:
+                continue
+            done.append(host.name)
+            reti.append(host)
+        return reti
 
     def add_connections(self, connections):
         if not connections: return
@@ -140,6 +149,10 @@ class TopologyDb(object):
     def destroy_bridges(self):
         for bridge in self.get_bridges():
             bridge.destroy()
+
+    def destroy_hosts(self):
+        for host in self.get_hosts():
+            host.destroy()
 
 
 
@@ -291,6 +304,21 @@ class Host:
         self.bootstrap_packages()
         self.stop_container()
 
+    def destroy(self):
+        c = lxc.Container(self.name)
+        if c.defined:
+            question = "Delete container {}?".format(self.name)
+            answer = self.u.query_yes_no(question, default="no")
+            if answer == True:
+                self.p.msg("Delete container in 2 seconds ...\n", color="red", stoptime=2.0)
+                c.stop()
+                if not c.destroy():
+                    self.p.msg("Failed to destroy the container!\n", color="red")
+                    sys.exit(1)
+        else:
+            self.p.msg("Container {} not available, cannot delete non-existing\n".format(self.name))
+
+
 class Terminal(Host):
 
     def graphviz_repr(self):
@@ -355,6 +383,7 @@ class Bridge:
         self.u.exec("ip link set dev {} up".format(self.name))
 
     def destroy(self):
+        self.p.msg("Delete bridge {}\n".format(self.name))
         self.u.exec("ip link set dev {} down".format(self.name))
         self.u.exec("brctl delbr {}".format(self.name))
 
@@ -963,9 +992,10 @@ class TopologyDestroy():
             self.p.msg("Not a valid topology: {}".format(e))
             sys.exit(1)
 
-        self.p.msg("Delete container and bridges\n", color="red", stoptime=5.0)
+        self.p.msg("Delete container and bridges\n")
         topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
-
+        topology_db.destroy_bridges()
+        topology_db.destroy_hosts()
 
 
 class ContainerLister():
