@@ -787,25 +787,6 @@ class TopologyCreate():
         if self.args.verbose:
             self.p.set_verbose()
 
-    def destroy_existing_container(self, topology_db):
-        self.p.msg("Check if identical container exists\n")
-        for host in topology_db.get_hosts():
-            c = lxc.Container(host.name)
-            if c.defined:
-                self.p.msg("Container {} already exists\n".format(host.name))
-                question = "Delete container or exit?"
-                answer = self.u.query_yes_no(question, default="no")
-                if answer == True:
-                    self.p.msg("Delete container in 1 seconds ...\n", color="red")
-                    time.sleep(1)
-                    c.stop()
-                    if not c.destroy():
-                        self.p.msg("Failed to destroy the container!\n", color="red")
-                        sys.exit(1)
-                else:
-                    self.p.msg("exiting, call \"sudo lxc-ls --fancy\" to see all container\n", color="red")
-                    exit(1)
-
     def start_container(self, host):
         c = lxc.Container(host.name)
         if c.defined:
@@ -827,28 +808,18 @@ class TopologyCreate():
 
         topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
         topology_db.destroy_bridges()
-        self.destroy_existing_container(topology_db)
+        topology_db.destroy_hosts()
 
-        done = []
         for bridge in topology_db.get_bridges():
-            if bridge.name in done:
-                continue
             bridge.create()
-            done.append(bridge.name)
 
-        done = []
         for host in topology_db.get_hosts():
-            if host.name in done: continue
             host.create()
-            done.append(host.name)
 
         self.p.msg("Start container:\n")
-        done = []
         for host in topology_db.get_hosts():
-            if host.name in done: continue
             self.p.msg("  {}\n".format(host.name))
             self.start_container(host)
-            done.append(host.name)
 
 
 
