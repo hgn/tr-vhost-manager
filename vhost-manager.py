@@ -323,6 +323,22 @@ class Host:
         else:
             self.p.msg("Container {} not available, cannot delete non-existing\n".format(self.name))
 
+    def start(self):
+        c = lxc.Container(self.name)
+        if not c.defined:
+            self.p.msg("Topology not created, at least {} not created".format(self.name), color="red")
+            sys.exit(1)
+            return
+        c.start()
+
+    def stop(self):
+        c = lxc.Container(self.name)
+        if not c.defined:
+            self.p.msg("Topology not created, at least {} not created".format(self.name), color="red")
+            sys.exit(1)
+            return
+        c.stop()
+
 
 class Terminal(Host):
 
