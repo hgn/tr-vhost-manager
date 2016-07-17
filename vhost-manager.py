@@ -80,7 +80,12 @@ class TopologyDb(object):
                     ret.append(v2)
             if k is not None and isinstance(k, Bridge):
                 ret.append(k)
-        return ret
+        done = []
+        for bridge in ret:
+            if bridge.name in done:
+                continue
+            done.append(bridge.name)
+        return done
 
     def get_hosts(self):
         ret = []
@@ -131,6 +136,11 @@ class TopologyDb(object):
 
     def __str__(self):
         return '{}({})'.format(self.__class__.__name__, dict(self._graph))
+
+    def destroy_bridges(self):
+        for bridge in self.get_bridges():
+            bridge.destroy()
+
 
 
 class Host:
@@ -343,6 +353,10 @@ class Bridge:
         self.u.exec("brctl setfd {} 0".format(self.name))
         self.u.exec("brctl sethello {} 5".format(self.name))
         self.u.exec("ip link set dev {} up".format(self.name))
+
+    def destroy(self):
+        self.u.exec("ip link set dev {} down".format(self.name))
+        self.u.exec("brctl delbr {}".format(self.name))
 
     def graphviz_repr(self):
         fmt  = "label = <<font point-size=\"6\">Bridge: {}</font>>".format(self.name)
@@ -783,6 +797,7 @@ class TopologyCreate():
         self.p.msg("Create topology {}\n".format(self.args.topology), stoptime=1.0)
 
         topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
+        topology_db.destroy_bridges()
         self.destroy_existing_container(topology_db)
 
         done = []
@@ -928,6 +943,31 @@ class TopologyList():
             self.p.msg("  {}  -  {}\n".format(t[0], t[1]), color=None)
 
 
+class TopologyDestroy():
+
+    def __init__(self):
+        uid0_required()
+        self.u = Utils()
+        self.p = Printer()
+        self.parse_local_options()
+
+    def parse_local_options(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument("topology", help="name of the topology", type=str)
+        self.args = parser.parse_args(sys.argv[2:])
+
+    def run(self):
+        try:
+            self.c = Configuration(topology=self.args.topology)
+        except ArgumentException as e:
+            self.p.msg("Not a valid topology: {}".format(e))
+            sys.exit(1)
+
+        self.p.msg("Delete container and bridges\n", color="red", stoptime=5.0)
+        topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
+
+
+
 class ContainerLister():
 
     def __init__(self):
@@ -963,9 +1003,8 @@ class VHostManager:
        "topology-graph":       [ "TopologyGraph", "create image of a given toplogy" ],
        "topology-list":        [ "TopologyList",  "list available topologies" ],
        "topology-connect":     [ "TopologyConnect",  "start and tmux connect to topology" ],
+       "topology-destroy":     [ "TopologyDestroy",  "Purge container and all bridges" ],
        "container-list":       [ "ContainerLister",  "list available container" ],
-       "container-stop-all":   [ "ContainerStopAll",  "start particular container" ],
-       "container-start-all":  [ "ContainerStartAll",  "start particular container" ],
        "container-stop":       [ "ContainerStop",  "start particular container" ],
        "container-start":      [ "ContainerStart",  "start particular container" ],
        "container-exec":       [ "ContainerExec",  "execute command on (all) container" ],
