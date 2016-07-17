@@ -1092,8 +1092,8 @@ def remove_tmp_dir():
 def uid0_required():
     euid = os.geteuid()
     if euid != 0:
-        print("Need to be root")
-        print("➡ sudo {}".format(" ".join(sys.argv)))
+        sys.stderr.write("Need to be root\n")
+        sys.stderr.write("➡ sudo {}\n".format(" ".join(sys.argv)))
         exit(1)
 
 
