@@ -846,6 +846,39 @@ class TopologyDestroy():
         topology_db.destroy_hosts()
 
 
+class TopologyStart():
+
+    def __init__(self):
+        uid0_required()
+        self.u = Utils()
+        self.p = Printer()
+        self.parse_local_options()
+
+    def parse_local_options(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument("topology", help="name of the topology", type=str)
+        self.args = parser.parse_args(sys.argv[2:])
+
+    def run(self):
+        try:
+            self.c = Configuration(topology=self.args.topology)
+        except ArgumentException as e:
+            self.p.msg("Not a valid topology: {}".format(e))
+            sys.exit(1)
+
+        self.p.msg("Start bridges and container\n")
+        topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
+
+        self.p.msg("Create bridges\n")
+        for bridge in topology_db.get_bridges():
+            bridge.create()
+
+        self.p.msg("Start container\n")
+        for host in topology_db.get_hosts():
+            self.p.msg("  {}\n".format(host.name), color=None)
+            host.start()
+
+
 class TopologyStop():
 
     def __init__(self):
