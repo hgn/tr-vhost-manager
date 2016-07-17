@@ -149,7 +149,7 @@
 					"Terminal(02t01)    <-> Bridge(brFFt01x01)"
 				],
 				"netem" : [
-					[ "Bridge(brFFt01x01)", "static-500kbit" ]
+					[ "Bridge(brFFt01x01)", "static-50kbit" ]
 				]
 		}
 	},

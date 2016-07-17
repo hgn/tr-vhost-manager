@@ -389,9 +389,14 @@ class UE(Host):
 class Bridge:
 
     def __init__(self, name, p, u, c, h):
-        self.u = u
-        self.p = p
         self.name = name
+        self.p = p
+        self.u = u
+        self.c = c
+        self.netem = self.__deserialize_netem(h)
+
+    def __deserialize_netem(self, h):
+        pass
 
     def __str__(self):
         return "Bridge({})".format(self.name)
@@ -413,9 +418,17 @@ class Bridge:
         self.u.exec("brctl delbr {}".format(self.name))
 
     def graphviz_repr(self):
-        fmt  = "label = <<font point-size=\"6\">Bridge: {}</font>>".format(self.name)
+        fmt  = "label = <<font point-size=\"6\">Bridge: {}</font><br/>".format(self.name)
+        fmt += "<font point-size=\"4\">{}</font>>".format("netem")
         fmt += ",shape = \"rect\""
         return fmt
+
+    def connected_interfaces(self):
+        path = "/sys/devices/virtual/net/{}/brif/".format(self.name)
+        if not os.path.isdir(path):
+            self.p.msg("device not available, topology started?", color="red")
+            return None
+        return os.listdir(path)
 
 
 class Printer:
@@ -540,9 +553,6 @@ class Configuration():
                 return True
         raise ArgumentException("topology not found: {}".format(self.topology_name))
 
-    def bridge_handle(self, bridge_name):
-        return bridge_name
-
     def terminal_gen_config(self, terminal_data):
         d = {}
         # standard data always present
@@ -588,6 +598,28 @@ class Configuration():
                 d['config'] = self.terminal_gen_config(terminal)
                 return d
         raise ConfigurationException("entity (router, terminal, ...) not found: {}".format(name))
+
+    def link_class_by_name(self, name):
+        if "link-classes" not in self.db:
+            return None
+        if name not in self.db["link-classes"]:
+            self.p.msg("link-class not available: {}\n".format(self.db["link-classes"]))
+            sys.exit(1)
+        return self.db["link-classes"][name]
+
+    def bridge_handle(self, bridge_name):
+        topo_db = self.db["topologies"][self.topology_name]
+        if "netem" not in topo_db:
+            # nothing to do
+            return
+        netem = self.db["topologies"][self.topology_name]["netem"]
+        for netem_entry in netem:
+            bridge, netem_conf = netem_entry
+            entry_bridge_name = bridge.split('(')[1].split(')')[0]
+            if entry_bridge_name != bridge_name:
+                continue
+            return self.link_class_by_name(netem_conf)
+        return None
 
     def create_entity_object(self, entry_type, entry_name, p, u, c):
         if entry_type == "Router":
@@ -902,7 +934,45 @@ class TopologyStop():
         self.p.msg("Stop container and delete bridges\n")
         topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
         topology_db.destroy_bridges()
-        topology_db.stop_hosts()
+
+        self.p.msg("Destroy bridges\n")
+        for bridge in topology_db.get_bridges():
+            self.p.msg("  {}\n".format(bridge.name), color=None)
+            bridge.destroy()
+
+        self.p.msg("Stop container\n")
+        for host in topology_db.get_hosts():
+            self.p.msg("  {}\n".format(host.name), color=None)
+            host.stop()
+
+
+
+class TopologyNetemStart():
+
+    def __init__(self):
+        uid0_required()
+        self.u = Utils()
+        self.p = Printer()
+        self.parse_local_options()
+
+    def parse_local_options(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument("topology", help="name of the topology", type=str)
+        self.args = parser.parse_args(sys.argv[2:])
+
+    def run(self):
+        try:
+            self.c = Configuration(topology=self.args.topology)
+        except ArgumentException as e:
+            self.p.msg("Not a valid topology: {}".format(e))
+            sys.exit(1)
+
+        topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
+
+        for bridge in topology_db.get_bridges():
+            self.p.msg("  {}\n".format(bridge.name), color=None)
+            veth_names = bridge.connected_interfaces()
+            print(veth_names)
 
 
 class ContainerLister():
@@ -941,6 +1011,7 @@ class VHostManager:
        "topology-list":        [ "TopologyList",  "list available topologies" ],
        "topology-connect":     [ "TopologyConnect",  "start and tmux connect to topology" ],
        "topology-destroy":     [ "TopologyDestroy",  "Purge container and all bridges" ],
+       "topology-netem-start": [ "TopologyNetemStart",  "Start network emulation for topology" ],
        "container-list":       [ "ContainerLister",  "list available container" ],
        "container-stop":       [ "ContainerStop",  "start particular container" ],
        "container-start":      [ "ContainerStart",  "start particular container" ],
