@@ -833,7 +833,7 @@ class TopologyConnect():
         self.prepare_tmux()
 
         i = 2
-        for host in topology_db.get_hosts():
+        for host in sorted(topology_db.get_hosts(), key=lambda entry: entry.name):
             self.p.msg("  {}\n".format(host.name))
             os.system("tmux new-window -t lxc:{} -n {} 'sudo lxc-console -n {}'".format(i, host.name, host.name))
             i += 1
