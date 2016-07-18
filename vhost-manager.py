@@ -439,8 +439,11 @@ class Bridge:
         self.u.exec("brctl delbr {}".format(self.name))
 
     def graphviz_repr(self):
+        netem = " "
+        if self.netem and 'cmd' in self.netem:
+            netem = "Netem: {}".format(self.netem['cmd'])
         fmt  = "label = <<font point-size=\"6\">Bridge: {}</font><br/>".format(self.name)
-        fmt += "<font point-size=\"4\">{}</font>>".format("netem")
+        fmt += "<font point-size=\"4\">{}</font>>".format(netem)
         fmt += ",shape = \"rect\""
         return fmt
 
