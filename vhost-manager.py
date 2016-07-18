@@ -396,7 +396,28 @@ class Bridge:
         self.netem = self.__deserialize_netem(h)
 
     def __deserialize_netem(self, h):
-        pass
+        if h is None:
+            return None
+        d = dict()
+        if "description" not in h:
+            raise ConfigurationException("Netem class has no description: {}\n".format(h))
+        d["description"] = h["description"]
+        if "class" not in h:
+            raise ConfigurationException("Netem class has no class: {}\n".format(h))
+        if h["class"] != "static":
+            raise ConfigurationException("Netem class must be static for now: {}\n".format(h))
+        if "data" not in h:
+            raise ConfigurationException("Netem class has no data: {}\n".format(h))
+
+        cmd = ""
+        netem_cmd_packed = h["data"]
+        netem_cmd_splitted = netem_cmd_packed.split(";")
+        for netem_cmd in netem_cmd_splitted:
+            netem_cmd_key_val_tupple = netem_cmd.split(":")
+            netem_cmd_values = netem_cmd_key_val_tupple[1].split(",")
+            cmd += "{} {} ".format(netem_cmd_key_val_tupple[0], " ".join(netem_cmd_values))
+        d['cmd'] = cmd
+        return d
 
     def __str__(self):
         return "Bridge({})".format(self.name)
@@ -423,12 +444,22 @@ class Bridge:
         fmt += ",shape = \"rect\""
         return fmt
 
-    def connected_interfaces(self):
+    def __connected_interfaces(self):
         path = "/sys/devices/virtual/net/{}/brif/".format(self.name)
         if not os.path.isdir(path):
             self.p.msg("device not available, topology started?", color="red")
             return None
         return os.listdir(path)
+
+    def start_netem(self):
+        if not self.netem:
+            # nothin to do, skip this bridge
+            return
+        veth_names = self.__connected_interfaces()
+        for veth_name in veth_names:
+            self.p.msg("apply netem rule to interface {}\n".format(veth_name), color=None)
+            self.p.msg(" netem cmd: {}\n".format(self.netem["cmd"]), color=None)
+            self.u.exec("tc qdisc add dev {} root netem {}".format(veth_name, self.netem["cmd"]))
 
 
 class Printer:
@@ -971,8 +1002,7 @@ class TopologyNetemStart():
 
         for bridge in topology_db.get_bridges():
             self.p.msg("  {}\n".format(bridge.name), color=None)
-            veth_names = bridge.connected_interfaces()
-            print(veth_names)
+            bridge.start_netem()
 
 
 class ContainerLister():
