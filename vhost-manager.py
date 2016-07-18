@@ -247,6 +247,15 @@ class Host:
         self.exec("echo '{}:{}' | chpasswd".format(self.username, self.userpass))
         self.exec("echo '{} ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers".format(self.username))
 
+    def create_ssh_environment(self):
+        ssh_dir = os.path.join("/home", self.username, ".ssh")
+        self.exec("mkdir -p {}".format(ssh_dir), user=self.username)
+        src_ssh_pub_path = os.path.join("tmp", "ssh-id-rsa.pub")
+        if not os.path.isfile(src_ssh_pub_path):
+            raise InternalException("ssh-id-rsa.pub not found {}".format(src_ssh_pub_path))
+        dst_ssh_path = os.path.join(ssh_dir, "authorized_keys",)
+        self.container_file_copy(self.name, src_ssh_pub_path, dst_ssh_path, user=self.username)
+
     def user_home_dir(self):
         # this function handles also SUDO invoked calls
         if "SUDO_UID" not in os.environ:
@@ -308,6 +317,7 @@ class Host:
         self.create_user_account()
         self.set_utc_timezone()
         self.copy_dotfiles()
+        self.create_ssh_environment()
         self.copy_distribution_specific()
         self.install_base_packages()
         self.bootstrap_packages()
