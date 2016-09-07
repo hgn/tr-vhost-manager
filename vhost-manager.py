@@ -280,6 +280,10 @@ class Host:
             # take own provided bashrc
             bashrc_path = os.path.join(assets_dir, "bashrc")
         self.container_file_copy(self.name, bashrc_path, dst_path, user=self.username)
+        # we copy bashrc to root too, just that potential proxy settings are
+        # also available for root too
+        self.container_file_copy(self.name, bashrc_path, "/root/.bashrc")
+
 
     def copy_dotfiles(self):
         root_dir = os.path.dirname(os.path.realpath(__file__))
