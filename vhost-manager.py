@@ -361,10 +361,17 @@ class Host:
 class Terminal(Host):
 
     def graphviz_repr(self):
+        iface_info = ""
+        for k, v in sorted(self.config['terminal-data']['interfaces'].items()):
+            a = v['ipv4-addr']
+            n = v['ipv4-addr-netmask']
+            c = "{}/{}".format(a, n)
+            iface_info += "<font point-size=\"4\">{} IPv4: {}<br/></font>\n".format(k, c)
+
         t = "Terminal"
         fmt  = "label = <<font color=\"blue\">{}</font><br/>".format(self.name)
-        fmt += "<font point-size=\"8\">IP:<br/>"
-        fmt += "{}</font>>".format(t)
+        fmt += iface_info
+        fmt += "<font point-size=\"6\">{}</font>>".format(t)
         fmt += ",shape = \"box\""
         return fmt
 
@@ -375,10 +382,18 @@ class Terminal(Host):
 class Router(Host):
 
     def graphviz_repr(self):
+        iface_info = ""
+        for k, v in sorted(self.config['terminal-data']['interfaces'].items()):
+            a = v['ipv4-addr']
+            n = v['ipv4-addr-netmask']
+            c = "{}/{}".format(a, n)
+            iface_info += "<font point-size=\"4\">{} IPv4: {}<br/></font>\n".format(k, c)
+        print(iface_info)
+
         t = "Router"
         fmt  = "label = <<font color=\"blue\">{}</font><br/>".format(self.name)
-        fmt += "<font point-size=\"8\">IP:<br/>"
-        fmt += "{}</font>>".format(t)
+        fmt += iface_info
+        fmt += "<font point-size=\"6\">{}</font>>".format(t)
         fmt += ",shape = \"box\""
         return fmt
 
@@ -389,10 +404,17 @@ class Router(Host):
 class UE(Host):
 
     def graphviz_repr(self):
+        iface_info = ""
+        for k, v in sorted(self.config['terminal-data']['interfaces'].items()):
+            a = v['ipv4-addr']
+            n = v['ipv4-addr-netmask']
+            c = "{}/{}".format(a, n)
+            iface_info += "<font point-size=\"4\">{} IPv4: {}<br/></font>\n".format(k, c)
+
         t = "UE"
         fmt  = "label = <<font color=\"blue\">{}</font><br/>".format(self.name)
-        fmt += "<font point-size=\"8\">IP:<br/>"
-        fmt += "{}</font>>".format(t)
+        fmt += iface_info
+        fmt += "<font point-size=\"6\">{}</font>>".format(t)
         fmt += ",shape = \"box\""
         return fmt
 
@@ -643,6 +665,7 @@ class Configuration():
         for i in ("terminals", "router", "ue"):
             if name in self.db["devices"][i]:
                 terminal = self.db["devices"][i][name]
+                d['terminal-data'] = terminal
                 d['config'] = self.terminal_gen_config(terminal)
                 return d
         raise ConfigurationException("entity (router, terminal, ...) not found: {}".format(name))
