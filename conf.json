@@ -80,7 +80,7 @@
 						"ipv4-addr" : "172.17.2.1",
 						"ipv4-addr-netmask" : "255.255.255.0",
 						"lxr-hw-addr": "AC:BB:01:01:xx:xx",
-						"lxr-link": "br02r01t01"
+						"lxr-link": "br02r01t02"
 					},
 					"air0" : {
 						"ipv4-addr" : "169.254.2.2",
@@ -123,7 +123,7 @@
                                     "ip route add 169.254.2.0/24 via 172.16.2.1 dev term01 || true",
                                     "ip route add 172.17.2.0/24 via 172.16.2.1 dev term01 || true",
                                     "ip route add 224.0.1.0/24 dev term00 || true"
-                                    ],
+                        ],
                         "lxr-hw-addr": "AC:AA:01:01:xx:xx",
                         "lxr-link": "br01r01t02"
 					}

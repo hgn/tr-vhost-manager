@@ -31,6 +31,7 @@ __version__  = "1"
 pp = pprint.PrettyPrinter(indent=4)
 
 TMPDIR = tempfile.mkdtemp()
+DEBUG  = False
 
 class ConfigurationException(Exception): pass
 class ArgumentException(Exception): pass
@@ -185,16 +186,17 @@ class Host:
 
     def tmp_file_new(self, string):
         name = os.path.join(TMPDIR, string)
-        fd = open(name,"w")
+        fd = open(name, "w")
         return fd, name
 
     def tmp_file_destroy(self, name):
+        if DEBUG: return
         os.remove(name)
 
     def create_container(self):
         fd, name = self.tmp_file_new("lxc-conf")
         config = self.config['config']['conf-lxc']
-        fd.write(config)
+        ret = fd.write(config)
         os.fsync(fd); fd.close()
 
         # sudo LC_ALL=C lxc-create --bdev dir -f $(dirname "${BASH_SOURCE[0]}")/lxc-config
@@ -1194,7 +1196,8 @@ def uid0_required():
 
 if __name__ == "__main__":
     try:
-        atexit.register(remove_tmp_dir)
+        if not DEBUG:
+            atexit.register(remove_tmp_dir)
         vhm = VHostManager()
         sys.exit(vhm.run())
     except KeyboardInterrupt:
