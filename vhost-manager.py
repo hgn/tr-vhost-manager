@@ -742,6 +742,8 @@ class Configuration():
         
 
     def create_topology_db(self, topology_name, p, u, c):
+        if not self.topology_name in self.db["topologies"]:
+            raise ArgumentException("Topology {} not available".format(self.topology_name))
         topo = self.db["topologies"][self.topology_name]
         g = TopologyDb(None, directed=True)
         for item in topo["map"]:
@@ -836,7 +838,7 @@ class TopologyCreate():
 
         cnt_size_byte = Utils.get_tree_size("/var/lib/lxc/")
         cnt_size_human = Utils.human_byte_size(cnt_size_byte)
-        self.p.msg("Created container size {}\n".format(cnt_size_byte))
+        self.p.msg("Created container size {}\n".format(cnt_size_human))
 
 
 
