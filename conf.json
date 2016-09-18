@@ -199,8 +199,8 @@
 	},
 
 	"topologies" : {
-		"two-two" : {
-			"description" : "two UEs, two Router, two Terminals - thats all",
+		"two-two-four" : {
+			"description" : "two UEs, two Router, four Terminals - thats all",
 			"map" : [
 					"UE(01av01)         <-> Bridge(br01aFFr01)",
 					"Bridge(br01aFFr01) <-> Router(01r01)",

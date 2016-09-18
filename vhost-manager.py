@@ -297,13 +297,13 @@ class Host:
         script_dir = os.path.dirname(os.path.realpath(__file__))
         src_path = os.path.join(script_dir, "tmp", "apt.conf")
         dst_path = "/etc/apt/apt.conf"
-        if os.path.isfile(filepath):
+        if os.path.isfile(src_path):
             self.container_file_copy(self.name, src_path, dst_path)
 
         # wget for proxy things
         src_path = os.path.join(script_dir, "tmp", "wgetrc")
         dst_path = "/etc/wgetrc"
-        if os.path.isfile(filepath):
+        if os.path.isfile(src_path):
             self.container_file_copy(self.name, src_path, dst_path)
 
     def install_base_packages(self):
@@ -618,7 +618,7 @@ class Utils:
         total = 0
         for entry in os.scandir(path):
             if entry.is_dir(follow_symlinks=False):
-                total += get_tree_size(entry.path)
+                total += Utils.get_tree_size(entry.path)
             else:
                 total += entry.stat(follow_symlinks=False).st_size
         return total
