@@ -19,7 +19,7 @@ import atexit
 import platform
 import pwd
 import collections
-
+import urllib
 
 # interface/bridge for local internet bridging
 INET_IFACE_NAME = "inet0"
@@ -600,6 +600,14 @@ class Utils:
                 sys.stdout.write("Please respond with 'yes' or 'no' "
                                  "(or 'y' or 'n').\n")
 
+    def valid_url(self, url):
+        import urllib.parse
+        # see https://docs.python.org/3.0/library/urllib.parse.html
+        # for valid attributes to check
+        to_check = ("scheme", "netloc")
+        token = urllib.parse.urlparse(url)
+        return all([getattr(token, qualifying_attr) for qualifying_attr in to_check])
+
 
 class Configuration():
 
@@ -1096,31 +1104,58 @@ class VHostManager:
             raise EnvironmentException("Distribution not detected")
 
     def ask_proxy(self):
-        self.p.msg("If your are behing a proxy, enter the url now or leave blank for none\n")
-        self.p.msg("URL must be in the form http://USER:PASS@url[:port]/\n")
+        self.p.msg("If your are behing a proxy, enter the url now or leave blank for none\n", color=None)
         res = False
         u = Utils()
         while True:
+            self.p.msg("URL must be in the form http://USER:PASS@url[:port]/\n", color=None)
             line = input("")
-            answer = u.query_yes_no("Is {} correct?".format(line))
+            if not u.valid_url(line):
+                self.p.msg("url not valid: {}\n".format(line), color=None)
+                continue
+            if line == "":
+                answer = u.query_yes_no("No proxied environment, correct?")
+            else:
+                answer = u.query_yes_no("Is \"{}\" correct?".format(line), default="no")
             if answer == True:
                 break
         if line == "":
             return None
+        else:
+            return line
 
-    def manage_proxy(self):
-        proxy_url = ask_proxy()
-        if None:
+    def manage_proxy(self, tmp_dir):
+        proxy_url = self.ask_proxy()
+        if not proxy_url:
             return
+        # apt specific proxy settings
+        config =  "Acquire::http::Proxy \"{}\";\n".format(proxy_url)
+        config += "Acquire::https::Proxy \"{}\";\n".format(proxy_url)
+        apt_conf_file = os.path.join(tmp_dir, "apt.conf")
+        with open(apt_conf_file, "w") as f:
+            f.write("{}".format(config))
+        # shell specific proxy settings
+        config =  "export http_proxy={}\n".format(proxy_url)
+        config += "export https_proxy={}\n".format(proxy_url)
+        apt_conf_file = os.path.join(tmp_dir, "shell-proxy.sh")
+        with open(apt_conf_file, "w") as f:
+            f.write("{}".format(config))
+        # wget ...
+        config =  "http_proxy = {}\n".format(proxy_url)
+        config += "https_proxy = {}\n".format(proxy_url)
+        apt_conf_file = os.path.join(tmp_dir, "wgetrc")
+        with open(apt_conf_file, "w") as f:
+            f.write("{}".format(config))
 
-    def first_startup(self, touch_dir):
-        touch_file = os.path.join(touch_dir, "already-started")
+    def first_startup(self, tmp_dir):
+        touch_file = os.path.join(tmp_dir, "already-started")
         if not os.path.isfile(touch_file):
             self.p.clear()
             self.p.msg("Seems you are new - great!\n", stoptime=1.0)
             self.p.clear()
             self.check_installed_packages()
-            self.ask_proxy()
+            self.manage_proxy(tmp_dir)
+            self.check_ssh_keys(tmp_dir)
             with open(touch_file, "w") as f:
                 f.write("{}".format(time.time()))
 
@@ -1131,14 +1166,12 @@ class VHostManager:
             self.p.msg("No SSH key found! I will generate a new one ...\n", stoptime=2.0)
             os.system("ssh-keygen -f tmp/ssh-id-rsa -N ''")
 
-
     def check_env(self):
         script_dir = os.path.dirname(os.path.realpath(__file__))
         tmp_dir    = os.path.join(script_dir, "tmp")
         os.makedirs(tmp_dir, exist_ok=True)
 
         self.first_startup(tmp_dir)
-        self.check_ssh_keys(tmp_dir)
 
     def print_version(self):
         sys.stdout.write("%s\n" % (__version__))
