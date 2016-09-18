@@ -608,6 +608,24 @@ class Utils:
         token = urllib.parse.urlparse(url)
         return all([getattr(token, qualifying_attr) for qualifying_attr in to_check])
 
+    @staticmethod
+    def get_tree_size(path):
+        total = 0
+        for entry in os.scandir(path):
+            if entry.is_dir(follow_symlinks=False):
+                total += get_tree_size(entry.path)
+            else:
+                total += entry.stat(follow_symlinks=False).st_size
+        return total
+
+    @staticmethod
+    def human_byte_size(size):
+        suffixes = ('B','KB','MB','GB','TB')
+        suffix_index = 0
+        while size > 1024 and suffix_index < len(suffixes) - 1:
+            suffix_index += 1
+            size = size / 1024.0
+        return "{}{}".format(size, suffixes[suffix_index])
 
 class Configuration():
 
@@ -810,6 +828,10 @@ class TopologyCreate():
         for host in topology_db.get_hosts():
             self.p.msg("  {}\n".format(host.name))
             self.start_container(host)
+
+        cnt_size_byte = Utils.get_tree_size("/var/lib/lxc/")
+        cnt_size_human = Utils.human_byte_size(cnt_size_byte)
+        self.p.msg("Created container size {}\n".format(cnt_size_byte))
 
 
 
