@@ -233,8 +233,8 @@
 	},
 
 	"user": {
-		"username" : "admin",
-		"userpass" : "admin"
+		"username" : "superuser",
+		"userpass" : "superuser"
 	}
 }
 
