@@ -1083,6 +1083,8 @@ class VHostManager:
         return True
 
     def check_installed_packages(self):
+        self.p.msg("I will make sure every required package is installed ...\n",
+                   stoptime=2.0)
         distribution = platform.linux_distribution()
         if distribution[0] == "Ubuntu":
             self.p.msg("seems you are using Ubuntu, great ...\n")
@@ -1093,14 +1095,32 @@ class VHostManager:
         else:
             raise EnvironmentException("Distribution not detected")
 
+    def ask_proxy(self):
+        self.p.msg("If your are behing a proxy, enter the url now or leave blank for none\n")
+        self.p.msg("URL must be in the form http://USER:PASS@url[:port]/\n")
+        res = False
+        u = Utils()
+        while True:
+            line = input("")
+            answer = u.query_yes_no("Is {} correct?".format(line))
+            if answer == True:
+                break
+        if line == "":
+            return None
+
+    def manage_proxy(self):
+        proxy_url = ask_proxy()
+        if None:
+            return
+
     def first_startup(self, touch_dir):
         touch_file = os.path.join(touch_dir, "already-started")
         if not os.path.isfile(touch_file):
             self.p.clear()
             self.p.msg("Seems you are new - great!\n", stoptime=1.0)
             self.p.clear()
-            self.p.msg("I will make sure every required package is installed ...\n", stoptime=2.0)
             self.check_installed_packages()
+            self.ask_proxy()
             with open(touch_file, "w") as f:
                 f.write("{}".format(time.time()))
 
