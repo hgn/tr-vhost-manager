@@ -395,7 +395,6 @@ class Router(Host):
             n = v['ipv4-addr-netmask']
             c = "{}/{}".format(a, n)
             iface_info += "<font point-size=\"4\">{} IPv4: {}<br/></font>\n".format(k, c)
-        print(iface_info)
 
         t = "Router"
         fmt  = "label = <<font color=\"blue\">{}</font><br/>".format(self.name)
