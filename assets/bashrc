@@ -1,11 +1,3 @@
-# Bashrc
-#
-# Settings for bash only.
-# File imports at the bottom.
-
-# If not running interactively, don't do anything, to stop bind/sftp errors
-[ -z "$PS1" ] && return
-
 #Colors ------------------------------------------------------------
 export TERM=xterm-color
 export GREP_OPTIONS='--color=auto' GREP_COLOR='1;32'
@@ -33,16 +25,7 @@ export COLOR_LIGHT_GRAY='\033[0;37m'
 alias colorslist="set | egrep 'COLOR_\w*'" # lists all the colors
 
 # Setup color options for LS, used in .bash_aliases
-if [ `uname` = Darwin ]; then
-    export LS_OPTIONS='-F'
-else
-    if [ `uname` = FreeBSD ]; then
-        export LS_OPTIONS='-G'
-    else
-        # Probably Linux with GNU utils
-        export LS_OPTIONS='--color=auto'
-    fi
-fi
+export LS_OPTIONS='--color=auto'
 
 # History -----------------------------------------------------------------------
 # Ignore dups and commands with a space at the beginning
@@ -92,6 +75,15 @@ export PS1='\[\033[01;32m\]\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 export PS2='> ' # Secondary prompt
 export PS3='#? ' # Prompt 3
 export PS4='+' # Prompt 4
+
+# enable bash completion in interactive shells
+if ! shopt -oq posix; then
+  if [ -f /usr/share/bash-completion/bash_completion ]; then
+    . /usr/share/bash-completion/bash_completion
+  elif [ -f /etc/bash_completion ]; then
+    . /etc/bash_completion
+  fi
+fi
 
 # Imports ----------------------------------------------------------------------------------------------
 # Turn on advanced bash completion if the file exists

@@ -581,6 +581,11 @@ class Utils:
     def exec(self, args):
         print("execute: \"{}\"".format(args))
         os.system(args)
+
+    @staticmethod
+    def sexec(args):
+        print("execute: \"{}\"".format(args))
+        os.system(args)
     
     def query_yes_no(self, question, default="yes"):
         valid = {"yes": True, "y": True, "ye": True,
@@ -630,7 +635,7 @@ class Utils:
         while size > 1024 and suffix_index < len(suffixes) - 1:
             suffix_index += 1
             size = size / 1024.0
-        return "{}{}".format(size, suffixes[suffix_index])
+        return "{0:.2f}{}".format(size, suffixes[suffix_index])
 
 class Configuration():
 
@@ -1133,7 +1138,8 @@ class VHostManager:
             raise EnvironmentException("Distribution not detected")
 
     def ask_proxy(self):
-        self.p.msg("If your are behing a proxy, enter the url now or leave blank for none\n", color=None)
+        self.p.msg("Configuration of system proxy settings\n")
+        self.p.msg("If your are behing a proxy, enter the proxy url now or leave blank for none\n", color=None)
         res = False
         u = Utils()
         while True:
@@ -1176,14 +1182,30 @@ class VHostManager:
         with open(apt_conf_file, "w") as f:
             f.write("{}".format(config))
 
+    def prepare_bashrc(self, tmp_dir):
+        root_dir = os.path.dirname(os.path.realpath(__file__))
+        proxy_sh_path = os.path.join(tmp_dir, "shell-proxy.sh")
+        src_bashrc_path = os.path.join(root_dir, "assets", "bashrc")
+        dst_bashrc_path = os.path.join(tmp_dir, "bashrc")
+        # copy vanilla bashrc
+        shutil.copyfile(src_bashrc_path, dst_bashrc_path)
+
+        if not os.path.isfile(proxy_sh_path):
+            return
+        with open(proxy_sh_path) as f:
+            content = f.read()
+        with open(dst_bashrc_path, "a") as f:
+            f.write("\n# proxy settings\n\n{}\n".format(content))
+        Utils.sexec("sync")
+
     def first_startup(self, tmp_dir):
         touch_file = os.path.join(tmp_dir, "already-started")
         if not os.path.isfile(touch_file):
             self.p.clear()
             self.p.msg("Seems you are new - great!\n", stoptime=1.0)
-            self.p.clear()
             self.check_installed_packages()
             self.manage_proxy(tmp_dir)
+            self.prepare_bashrc(tmp_dir)
             self.check_ssh_keys(tmp_dir)
             with open(touch_file, "w") as f:
                 f.write("{}".format(time.time()))
@@ -1191,7 +1213,6 @@ class VHostManager:
     def check_ssh_keys(self, tmp_dir):
         ssh_file = os.path.join(tmp_dir, "ssh-id-rsa")
         if not os.path.isfile(ssh_file):
-            self.p.clear()
             self.p.msg("No SSH key found! I will generate a new one ...\n", stoptime=2.0)
             os.system("ssh-keygen -f tmp/ssh-id-rsa -N ''")
 
