@@ -17,6 +17,10 @@
 		"terminals" : {
 
 			"01t01" : {
+                "interface-debug" : {
+                    "ipv4-addr" : "1.1.1.1",
+                    "ipv4-addr-netmask" : "255.255.0.0"
+                },
 				"interfaces" : {
 					"eth0" : {
 						"ipv4-addr" : "172.16.1.1",
@@ -36,6 +40,10 @@
 				}
 			},
 			"01t02" : {
+                "interface-debug" : {
+                    "ipv4-addr" : "1.1.1.2",
+                    "ipv4-addr-netmask" : "255.255.0.0"
+                },
 				"interfaces" : {
 					"eth0" : {
 						"ipv4-addr" : "172.16.2.1",
@@ -56,6 +64,10 @@
 			},
 
 			"02t01" : {
+                "interface-debug" : {
+                    "ipv4-addr" : "1.1.1.3",
+                    "ipv4-addr-netmask" : "255.255.0.0"
+                },
 				"interfaces" : {
 					"eth0" : {
 						"ipv4-addr" : "172.17.1.1",
@@ -75,6 +87,10 @@
 				}
 			},
 			"02t02" : {
+                "interface-debug" : {
+                    "ipv4-addr" : "1.1.1.4",
+                    "ipv4-addr-netmask" : "255.255.0.0"
+                },
 				"interfaces" : {
 					"eth0" : {
 						"ipv4-addr" : "172.17.2.1",
@@ -98,6 +114,10 @@
 		"router" : {
 
 			"01r01" : {
+                "interface-debug" : {
+                    "ipv4-addr" : "1.1.1.5",
+                    "ipv4-addr-netmask" : "255.255.0.0"
+                },
 				"interfaces" : {
 					"av00" : {
 						"ipv4-addr" : "10.0.1.100",
@@ -131,6 +151,10 @@
 			},
 
 			"02r01" : {
+                "interface-debug" : {
+                    "ipv4-addr" : "1.1.1.6",
+                    "ipv4-addr-netmask" : "255.255.0.0"
+                },
 				"interfaces" : {
 					"av00" : {
 						"ipv4-addr" : "10.0.2.100",
@@ -168,6 +192,10 @@
 		"ue" : {
 
 			"01av01" : {
+                "interface-debug" : {
+                    "ipv4-addr" : "1.1.1.7",
+                    "ipv4-addr-netmask" : "255.255.0.0"
+                },
 				"interfaces" : {
 					"eth0" : {
 						"ipv4-addr" : "10.0.1.1",
@@ -182,6 +210,10 @@
 			},
 
 			"02av01" : {
+                "interface-debug" : {
+                    "ipv4-addr" : "1.1.1.8",
+                    "ipv4-addr-netmask" : "255.255.0.0"
+                },
 				"interfaces" : {
 					"eth0" : {
 						"ipv4-addr" : "10.0.2.1",

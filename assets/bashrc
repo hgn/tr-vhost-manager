@@ -62,13 +62,6 @@ shopt -s extglob
 shopt -s sourcepath
 shopt -s no_empty_cmd_completion
 
-# bash completion settings (actually, these are readline settings)
-bind "set completion-ignore-case on"
-# no bell
-bind "set bell-style none" 
- # Show list automatically, without double tab
-bind "set show-all-if-ambiguous On"
-
 # Less is more
 export PAGER=/usr/bin/less
 #fix color/control character issues with git, enable wrapping

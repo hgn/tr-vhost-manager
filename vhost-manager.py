@@ -25,6 +25,12 @@ import urllib
 INET_IFACE_NAME = "inet0"
 INET_BRIDGE_NAME = "lxcbr0"
 
+# debug interface for debugging
+DEBUG_IFACE_NAME = "debug0"
+DEBUG_BRIDGE_NAME = "brdebug0"
+DEBUG_IFACE_V4_ADDR = "1.1.1.250"
+DEBUG_IFACE_V4_MASK = 16
+
 __programm__ = "vhost-manager"
 __version__  = "1"
 
@@ -464,6 +470,28 @@ class Bridge:
     def __str__(self):
         return "Bridge({})".format(self.name)
 
+    @staticmethod
+    def create_debug_bridge():
+        sys.stderr.write("Create debug bridge: {}\n".format(DEBUG_BRIDGE_NAME))
+        brige_path = os.path.join("/sys/class/net", DEBUG_BRIDGE_NAME)
+        if os.path.isdir(brige_path):
+            sys.stderr.write("debug bridge {} already created\n".format(DEBUG_BRIDGE_NAME))
+            return
+        Utils.sexec("brctl addbr {}".format(DEBUG_BRIDGE_NAME))
+        Utils.sexec("brctl setfd {} 0".format(DEBUG_BRIDGE_NAME))
+        Utils.sexec("brctl sethello {} 5".format(DEBUG_BRIDGE_NAME))
+        Utils.sexec("ip link set dev {} up".format(DEBUG_BRIDGE_NAME))
+        Utils.sexec("ip addr add {}/{} dev {}".format(DEBUG_IFACE_V4_ADDR, DEBUG_IFACE_V4_MASK, DEBUG_BRIDGE_NAME))
+
+    @staticmethod
+    def destroy_debug_bridge():
+        brige_path = os.path.join("/sys/class/net", DEBUG_BRIDGE_NAME)
+        if not os.path.isdir(brige_path):
+            return
+        sys.stderr.write("Delete bridge {}\n".format(DEBUG_BRIDGE_NAME))
+        Utils.sexec("ip link set dev {} down".format(DEBUG_BRIDGE_NAME))
+        Utils.sexec("brctl delbr {}".format(DEBUG_BRIDGE_NAME))
+
     def create(self):
         self.p.msg("Create bridge: {}\n".format(self.name))
         brige_path = os.path.join("/sys/class/net", self.name)
@@ -476,6 +504,9 @@ class Bridge:
         self.u.exec("ip link set dev {} up".format(self.name))
 
     def destroy(self):
+        brige_path = os.path.join("/sys/class/net", self.name)
+        if not os.path.isdir(brige_path):
+            return
         self.p.msg("Delete bridge {}\n".format(self.name))
         self.u.exec("ip link set dev {} down".format(self.name))
         self.u.exec("brctl delbr {}".format(self.name))
@@ -634,7 +665,7 @@ class Utils:
         while size > 1024 and suffix_index < len(suffixes) - 1:
             suffix_index += 1
             size = size / 1024.0
-        return "{0:.2f}{}".format(size, suffixes[suffix_index])
+        return "{:.2f}{}".format(size, suffixes[suffix_index])
 
 class Configuration():
 
@@ -662,11 +693,20 @@ class Configuration():
 
     def terminal_gen_config(self, terminal_data):
         d = {}
+
         # standard data always present
         e  = "auto lo\n"
         e += "iface lo inet loopback\n\n"
+
+        # upstream interface towards "internet"
         e += "auto inet0\n"
         e += "iface inet0 inet dhcp\n\n"
+
+        # for debug interface
+        e += "auto {}\n".format(DEBUG_IFACE_NAME)
+        e += "iface {} inet static\n".format(DEBUG_IFACE_NAME)
+        e += "  address {}\n".format(terminal_data['interface-debug']["ipv4-addr"])
+        e += "  netmask {}\n\n".format(terminal_data['interface-debug']["ipv4-addr-netmask"])
 
         # Debian Network section
         for interface_name, interface_data in terminal_data["interfaces"].items():
@@ -687,6 +727,13 @@ class Configuration():
         e += "lxc.network.flags = up\n"
         e += "lxc.network.link = {}\n".format(INET_BRIDGE_NAME)
         e += "lxc.network.hwaddr = 00:11:xx:xx:xx:xx\n\n"
+
+        # LXC section for debug interface
+        e += "lxc.network.type = veth\n"
+        e += "lxc.network.name = {}\n".format(DEBUG_IFACE_NAME)
+        e += "lxc.network.flags = up\n"
+        e += "lxc.network.link = {}\n".format(DEBUG_BRIDGE_NAME)
+        e += "lxc.network.hwaddr = 00:00:xx:xx:xx:xx\n\n"
         
         for interface_name, interface_data in terminal_data["interfaces"].items():
             e += "lxc.network.type = veth\n"
@@ -829,6 +876,9 @@ class TopologyCreate():
         topology_db.destroy_bridges()
         topology_db.destroy_hosts()
 
+        # create bridges first, if not already created
+        Bridge.destroy_debug_bridge()
+        Bridge.create_debug_bridge()
         for bridge in topology_db.get_bridges():
             bridge.create()
 
@@ -966,6 +1016,7 @@ class TopologyDestroy():
 
         self.p.msg("Delete container and bridges\n")
         topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
+        Bridge.destroy_debug_bridge()
         topology_db.destroy_bridges()
         topology_db.destroy_hosts()
 
@@ -993,7 +1044,9 @@ class TopologyStart():
         self.p.msg("Start bridges and container\n")
         topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
 
-        self.p.msg("Create bridges\n")
+        self.p.msg("Create topology bridges\n")
+        Bridge.destroy_debug_bridge()
+        Bridge.create_debug_bridge()
         for bridge in topology_db.get_bridges():
             bridge.create()
 
@@ -1144,12 +1197,12 @@ class VHostManager:
         while True:
             self.p.msg("URL must be in the form http://USER:PASS@url[:port]/\n", color=None)
             line = input("")
-            if not u.valid_url(line):
-                self.p.msg("url not valid: {}\n".format(line), color=None)
-                continue
             if line == "":
                 answer = u.query_yes_no("No proxied environment, correct?")
             else:
+                if not u.valid_url(line):
+                    self.p.msg("url not valid: {}\n".format(line), color=None)
+                    continue
                 answer = u.query_yes_no("Is \"{}\" correct?".format(line), default="no")
             if answer == True:
                 break
