@@ -965,6 +965,9 @@ class TopologyConnect():
         topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
         self.prepare_tmux()
 
+        # should be replaced by ssh command:
+        # sudo ssh -oStrictHostKeyChecking=no -i tmp/ssh-id-rsa superuser@1.1.1.1
+        # this will also allow later automatic processes on the guests
         i = 2
         for host in sorted(topology_db.get_hosts(), key=lambda entry: entry.name):
             self.p.msg("  {}\n".format(host.name))
