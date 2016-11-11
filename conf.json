@@ -167,7 +167,7 @@
 					},
 					"interfaces" : {
 						"av00" : {
-							"ipv4-addr" : "10.0.1.100",
+							"ipv4-addr" : "10.200.1.100",
 							"ipv4-addr-netmask" : "255.255.255.0",
 							"lxr-hw-addr": "AC:BB:01:01:xx:xx",
 							"lxr-link": "br01aFFr01"
@@ -204,7 +204,7 @@
 					},
 					"interfaces" : {
 						"av00" : {
-							"ipv4-addr" : "10.0.2.100",
+							"ipv4-addr" : "10.200.2.100",
 							"ipv4-addr-netmask" : "255.255.255.0",
 							"lxr-hw-addr": "AC:BB:02:01:xx:xx",
 							"lxr-link": "br02aFFr01"
@@ -242,7 +242,7 @@
 					},
 					"interfaces" : {
 						"av00" : {
-							"ipv4-addr" : "10.0.3.100",
+							"ipv4-addr" : "10.200.3.100",
 							"ipv4-addr-netmask" : "255.255.255.0",
 							"lxr-hw-addr": "AC:BB:02:01:xx:xx",
 							"lxr-link": "br03aFFr01"
@@ -283,10 +283,10 @@
 					},
 					"interfaces" : {
 						"eth0" : {
-							"ipv4-addr" : "10.0.1.1",
+							"ipv4-addr" : "10.200.1.1",
 							"ipv4-addr-netmask" : "255.255.255.0",
 							"post-up" : [
-								"ip route add default via 10.0.1.100 || true"
+								"ip route add default via 10.200.1.100 || true"
 							],
 							"lxr-hw-addr": "AC:BB:01:01:xx:xx",
 							"lxr-link": "br01aFFr01"
@@ -301,10 +301,10 @@
 					},
 					"interfaces" : {
 						"eth0" : {
-							"ipv4-addr" : "10.0.2.1",
+							"ipv4-addr" : "10.200.2.1",
 							"ipv4-addr-netmask" : "255.255.255.0",
 							"post-up" : [
-								"ip route add default via 10.0.2.100 || true"
+								"ip route add default via 10.200.2.100 || true"
 							],
 							"lxr-hw-addr": "AC:BB:02:01:xx:xx",
 							"lxr-link": "br02aFFr01"
@@ -319,12 +319,12 @@
 					},
 					"interfaces" : {
 						"eth0" : {
-							"ipv4-addr" : "10.0.3.1",
+							"ipv4-addr" : "10.200.3.1",
 							"ipv4-addr-netmask" : "255.255.255.0",
 							"post-up" : [
-								"ip route add default via 10.0.3.100 || true"
+								"ip route add default via 10.200.3.100 || true"
 							],
-							"lxr-hw-addr": "AC:BB:01:01:xx:xx",
+							"lxr-hw-addr": "AC:BB:03:01:xx:xx",
 							"lxr-link": "br03aFFr01"
 						}
 					}
