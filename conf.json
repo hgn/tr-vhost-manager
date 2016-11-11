@@ -3,12 +3,14 @@
 		"static-50kbit" : {
 			"description" : "50kbit",
 			"class" : "static",
-			"data" : "delay:100ms,10ms;loss:0.1%;rate:50kbit"
+			"pre-data" : "delay:100ms,10ms;loss:0.1%;rate:50kbit",
+			"op-data"  : "delay:100ms,10ms;loss:0.1%;rate:50kbit"
 		},
 		"static-200kbit" : {
 			"description" : "200kbit",
 			"class" : "static",
-			"data" : "delay:100ms,10ms;loss:0.1%;rate:200kbit"
+			"pre-data" : "delay:100ms,10ms;loss:0.1%;rate:200kbit",
+			"op-data" : "delay:100ms,10ms;loss:0.1%;rate:200kbit"
 		}
 	},
 
