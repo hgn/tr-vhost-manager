@@ -315,7 +315,10 @@ class Host:
 
     def install_base_packages(self):
         self.exec("apt-get -y update")
-        self.exec("apt-get -y install git vim bash python3 wget")
+        self.exec("apt-get -y install git vim bash python3")
+        # we do not want that our recently written wget conf is
+        # overwritten.
+        self.exec('apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" install wget')
 
     def bootstrap_packages(self):
         self.exec("git clone https://github.com/hgn/tr-bootstrapper.git", user=self.username)
