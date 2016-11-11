@@ -12,261 +12,383 @@
 		}
 	},
 
-	"devices" : {
+		"devices" : {
 
-		"terminals" : {
+			"terminals" : {
 
-			"01t01" : {
-                "interface-debug" : {
-                    "ipv4-addr" : "1.1.1.1",
-                    "ipv4-addr-netmask" : "255.255.0.0"
-                },
-				"interfaces" : {
-					"eth0" : {
-						"ipv4-addr" : "172.16.1.1",
-						"ipv4-addr-netmask" : "255.255.255.0",
-						"lxr-hw-addr": "AC:BB:01:01:xx:xx",
-						"lxr-link": "br01r01t01"
+				"01t01" : {
+					"interface-debug" : {
+						"ipv4-addr" : "1.1.1.1",
+						"ipv4-addr-netmask" : "255.255.0.0"
 					},
-					"air0" : {
-						"ipv4-addr" : "169.254.1.1",
-						"ipv4-addr-netmask" : "255.255.255.0",
-						"post-up" : [
-                                    "ip route add 172.17.1.0/24 via 169.254.1.2 dev air0 || true"
-                        ],
-                        "lxr-hw-addr": "AC:AA:01:01:xx:xx",
-                        "lxr-link": "brFFt01x01"
+					"interfaces" : {
+						"eth0" : {
+							"ipv4-addr" : "172.16.1.1",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"lxr-hw-addr": "AC:BB:01:01:xx:xx",
+							"lxr-link": "br01r01t01"
+						},
+						"air0" : {
+							"ipv4-addr" : "169.254.1.1",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"post-up" : [
+								"ip route add 172.17.1.0/24 via 169.254.1.2 dev air0 || true"
+							],
+							"lxr-hw-addr": "AC:AA:01:01:xx:xx",
+							"lxr-link": "brFFt01x01"
+						}
+					}
+				},
+				"01t02" : {
+					"interface-debug" : {
+						"ipv4-addr" : "1.1.1.2",
+						"ipv4-addr-netmask" : "255.255.0.0"
+					},
+					"interfaces" : {
+						"eth0" : {
+							"ipv4-addr" : "172.16.2.1",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"lxr-hw-addr": "AC:BB:01:01:xx:xx",
+							"lxr-link": "br01r01t02"
+						},
+						"air0" : {
+							"ipv4-addr" : "169.254.2.1",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"post-up" : [
+								"ip route add 172.17.2.0/24 via 169.254.2.2 dev air0 || true"
+							],
+							"lxr-hw-addr": "AC:AA:01:01:xx:xx",
+							"lxr-link": "brFFt02x01"
+						}
+					}
+				},
+
+				"02t01" : {
+					"interface-debug" : {
+						"ipv4-addr" : "1.1.1.3",
+						"ipv4-addr-netmask" : "255.255.0.0"
+					},
+					"interfaces" : {
+						"eth0" : {
+							"ipv4-addr" : "172.17.1.1",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"lxr-hw-addr": "AC:BB:01:01:xx:xx",
+							"lxr-link": "br02r01t01"
+						},
+						"air0" : {
+							"ipv4-addr" : "169.254.1.2",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"post-up" : [
+								"ip route add 172.16.1.0/24 via 169.254.1.1 dev air0 || true"
+							],
+							"lxr-hw-addr": "AC:AA:01:01:xx:xx",
+							"lxr-link": "brFFt01x01"
+						}
+					}
+				},
+				"02t02" : {
+					"interface-debug" : {
+						"ipv4-addr" : "1.1.1.4",
+						"ipv4-addr-netmask" : "255.255.0.0"
+					},
+					"interfaces" : {
+						"eth0" : {
+							"ipv4-addr" : "172.17.2.1",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"lxr-hw-addr": "AC:BB:01:01:xx:xx",
+							"lxr-link": "br02r01t02"
+						},
+						"air0" : {
+							"ipv4-addr" : "169.254.2.2",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"post-up" : [
+								"ip route add 172.16.2.0/24 via 169.254.2.1 dev air0 || true"
+							],
+							"lxr-hw-addr": "AC:AA:01:01:xx:xx",
+							"lxr-link": "brFFt02x01"
+						}
+					}
+				},
+				"03t01" : {
+					"interface-debug" : {
+						"ipv4-addr" : "1.1.1.5",
+						"ipv4-addr-netmask" : "255.255.0.0"
+					},
+					"interfaces" : {
+						"eth0" : {
+							"ipv4-addr" : "172.18.1.1",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"lxr-hw-addr": "AC:BB:01:01:xx:xx",
+							"lxr-link": "br03r01t01"
+						},
+						"air0" : {
+							"ipv4-addr" : "169.254.1.3",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"post-up" : [
+								"ip route add 172.17.1.0/24 via 169.254.1.2 dev air0 || true"
+							],
+							"lxr-hw-addr": "AC:AA:01:01:xx:xx",
+							"lxr-link": "brFFt01x02"
+						}
+					}
+				},
+				"03t02" : {
+					"interface-debug" : {
+						"ipv4-addr" : "1.1.1.6",
+						"ipv4-addr-netmask" : "255.255.0.0"
+					},
+					"interfaces" : {
+						"eth0" : {
+							"ipv4-addr" : "172.18.2.1",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"lxr-hw-addr": "AC:BB:01:01:xx:xx",
+							"lxr-link": "br03r01t02"
+						},
+						"air0" : {
+							"ipv4-addr" : "169.254.2.3",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"post-up" : [
+								"ip route add 172.17.2.0/24 via 169.254.2.2 dev air0 || true"
+							],
+							"lxr-hw-addr": "AC:AA:01:01:xx:xx",
+							"lxr-link": "brFFt02x02"
+						}
 					}
 				}
+
+
 			},
-			"01t02" : {
-                "interface-debug" : {
-                    "ipv4-addr" : "1.1.1.2",
-                    "ipv4-addr-netmask" : "255.255.0.0"
-                },
-				"interfaces" : {
-					"eth0" : {
-						"ipv4-addr" : "172.16.2.1",
-						"ipv4-addr-netmask" : "255.255.255.0",
-						"lxr-hw-addr": "AC:BB:01:01:xx:xx",
-						"lxr-link": "br01r01t02"
+			"router" : {
+
+				"01r01" : {
+					"interface-debug" : {
+						"ipv4-addr" : "1.1.1.7",
+						"ipv4-addr-netmask" : "255.255.0.0"
 					},
-					"air0" : {
-						"ipv4-addr" : "169.254.2.1",
-						"ipv4-addr-netmask" : "255.255.255.0",
-						"post-up" : [
-                                    "ip route add 172.17.2.0/24 via 169.254.2.2 dev air0 || true"
-                        ],
-                        "lxr-hw-addr": "AC:AA:01:01:xx:xx",
-                        "lxr-link": "brFFt02x01"
+					"interfaces" : {
+						"av00" : {
+							"ipv4-addr" : "10.0.1.100",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"lxr-hw-addr": "AC:BB:01:01:xx:xx",
+							"lxr-link": "br01aFFr01"
+						},
+						"term00" : {
+							"ipv4-addr" : "172.16.1.100",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"post-up" : [
+								"ip route add 169.254.1.0/24 via 172.16.1.1 dev term00 || true",
+							"ip route add 172.17.1.0/24 via 172.16.1.1 dev term00 || true",
+							"ip route add 224.0.1.0/24 dev term00 || true"
+							],
+							"lxr-hw-addr": "AC:AA:01:01:xx:xx",
+							"lxr-link": "br01r01t01"
+						},
+						"term01" : {
+							"ipv4-addr" : "172.16.2.100",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"post-up" : [
+								"ip route add 169.254.2.0/24 via 172.16.2.1 dev term01 || true",
+							"ip route add 172.17.2.0/24 via 172.16.2.1 dev term01 || true",
+							"ip route add 224.0.1.0/24 dev term00 || true"
+							],
+							"lxr-hw-addr": "AC:AA:01:01:xx:xx",
+							"lxr-link": "br01r01t02"
+						}
+					}
+				},
+
+				"02r01" : {
+					"interface-debug" : {
+						"ipv4-addr" : "1.1.1.8",
+						"ipv4-addr-netmask" : "255.255.0.0"
+					},
+					"interfaces" : {
+						"av00" : {
+							"ipv4-addr" : "10.0.2.100",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"lxr-hw-addr": "AC:BB:02:01:xx:xx",
+							"lxr-link": "br02aFFr01"
+						},
+						"term00" : {
+							"ipv4-addr" : "172.17.1.100",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"post-up" : [
+								"ip route add 169.254.1.0/24 via 172.17.1.1 dev term00 || true",
+							"ip route add 172.16.1.0/24 via 172.17.1.1 dev term00 || true",
+							"ip route add 172.18.1.0/24 via 172.17.1.1 dev term00 || true",				
+							"ip route add 224.0.1.0/24 dev term00 || true"
+							],
+							"lxr-hw-addr": "AC:AA:02:01:xx:xx",
+							"lxr-link": "br02r01t01"
+						},
+						"term01" : {
+							"ipv4-addr" : "172.17.2.100",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"post-up" : [
+								"ip route add 169.254.2.0/24 via 172.17.2.1 dev term01 || true",
+							"ip route add 172.16.2.0/24 via 172.17.2.1 dev term01 || true",
+							"ip route add 172.18.2.0/24 via 172.17.2.1 dev term01 || true",
+							"ip route add 224.0.1.0/24 dev term00 || true"
+							],
+							"lxr-hw-addr": "AC:AA:02:01:xx:xx",
+							"lxr-link": "br02r01t02"
+						}
+					}
+				},
+				"03r01" : {
+					"interface-debug" : {
+						"ipv4-addr" : "1.1.1.9",
+						"ipv4-addr-netmask" : "255.255.0.0"
+					},
+					"interfaces" : {
+						"av00" : {
+							"ipv4-addr" : "10.0.3.100",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"lxr-hw-addr": "AC:BB:02:01:xx:xx",
+							"lxr-link": "br03aFFr01"
+						},
+						"term00" : {
+							"ipv4-addr" : "172.18.1.100",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"post-up" : [
+								"ip route add 169.254.1.0/24 via 172.18.1.1 dev term00 || true",
+							"ip route add 172.17.1.0/24 via 172.18.1.1 dev term00 || true",
+							"ip route add 224.0.1.0/24 dev term00 || true"
+							],
+							"lxr-hw-addr": "AC:AA:02:01:xx:xx",
+							"lxr-link": "br03r01t01"
+						},
+						"term01" : {
+							"ipv4-addr" : "172.18.2.100",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"post-up" : [
+								"ip route add 169.254.2.0/24 via 172.18.2.1 dev term01 || true",
+							"ip route add 172.17.2.0/24 via 172.18.2.1 dev term01 || true",
+							"ip route add 224.0.1.0/24 dev term01 || true"
+							],
+							"lxr-hw-addr": "AC:AA:02:01:xx:xx",
+							"lxr-link": "br03r01t02"
+						}
 					}
 				}
+
 			},
 
-			"02t01" : {
-                "interface-debug" : {
-                    "ipv4-addr" : "1.1.1.3",
-                    "ipv4-addr-netmask" : "255.255.0.0"
-                },
-				"interfaces" : {
-					"eth0" : {
-						"ipv4-addr" : "172.17.1.1",
-						"ipv4-addr-netmask" : "255.255.255.0",
-						"lxr-hw-addr": "AC:BB:01:01:xx:xx",
-						"lxr-link": "br02r01t01"
+			"ue" : {
+
+				"01av01" : {
+					"interface-debug" : {
+						"ipv4-addr" : "1.1.1.10",
+						"ipv4-addr-netmask" : "255.255.0.0"
 					},
-					"air0" : {
-						"ipv4-addr" : "169.254.1.2",
-						"ipv4-addr-netmask" : "255.255.255.0",
-						"post-up" : [
-                                    "ip route add 172.16.1.0/24 via 169.254.1.1 dev air0 || true"
-                        ],
-                        "lxr-hw-addr": "AC:AA:01:01:xx:xx",
-                        "lxr-link": "brFFt01x01"
+					"interfaces" : {
+						"eth0" : {
+							"ipv4-addr" : "10.0.1.1",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"post-up" : [
+								"ip route add default via 10.0.1.100 || true"
+							],
+							"lxr-hw-addr": "AC:BB:01:01:xx:xx",
+							"lxr-link": "br01aFFr01"
+						}
+					}
+				},
+
+				"02av01" : {
+					"interface-debug" : {
+						"ipv4-addr" : "1.1.1.11",
+						"ipv4-addr-netmask" : "255.255.0.0"
+					},
+					"interfaces" : {
+						"eth0" : {
+							"ipv4-addr" : "10.0.2.1",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"post-up" : [
+								"ip route add default via 10.0.2.100 || true"
+							],
+							"lxr-hw-addr": "AC:BB:02:01:xx:xx",
+							"lxr-link": "br02aFFr01"
+						}
+					}
+				},
+
+				"03av01" : {
+					"interface-debug" : {
+						"ipv4-addr" : "1.1.1.12",
+						"ipv4-addr-netmask" : "255.255.0.0"
+					},
+					"interfaces" : {
+						"eth0" : {
+							"ipv4-addr" : "10.0.3.1",
+							"ipv4-addr-netmask" : "255.255.255.0",
+							"post-up" : [
+								"ip route add default via 10.0.3.100 || true"
+							],
+							"lxr-hw-addr": "AC:BB:01:01:xx:xx",
+							"lxr-link": "br03aFFr01"
+						}
 					}
 				}
-			},
-			"02t02" : {
-                "interface-debug" : {
-                    "ipv4-addr" : "1.1.1.4",
-                    "ipv4-addr-netmask" : "255.255.0.0"
-                },
-				"interfaces" : {
-					"eth0" : {
-						"ipv4-addr" : "172.17.2.1",
-						"ipv4-addr-netmask" : "255.255.255.0",
-						"lxr-hw-addr": "AC:BB:01:01:xx:xx",
-						"lxr-link": "br02r01t02"
-					},
-					"air0" : {
-						"ipv4-addr" : "169.254.2.2",
-						"ipv4-addr-netmask" : "255.255.255.0",
-						"post-up" : [
-                                    "ip route add 172.16.2.0/24 via 169.254.2.1 dev air0 || true"
-                        ],
-                        "lxr-hw-addr": "AC:AA:01:01:xx:xx",
-                        "lxr-link": "brFFt02x01"
-					}
-				}
+
+
+
 			}
-
 		},
-		"router" : {
 
-			"01r01" : {
-                "interface-debug" : {
-                    "ipv4-addr" : "1.1.1.5",
-                    "ipv4-addr-netmask" : "255.255.0.0"
-                },
-				"interfaces" : {
-					"av00" : {
-						"ipv4-addr" : "10.0.1.100",
-						"ipv4-addr-netmask" : "255.255.255.0",
-						"lxr-hw-addr": "AC:BB:01:01:xx:xx",
-						"lxr-link": "br01aFFr01"
-					},
-					"term00" : {
-						"ipv4-addr" : "172.16.1.100",
-						"ipv4-addr-netmask" : "255.255.255.0",
-						"post-up" : [
-                                    "ip route add 169.254.1.0/24 via 172.16.1.1 dev term00 || true",
-                                    "ip route add 172.17.1.0/24 via 172.16.1.1 dev term00 || true",
-                                    "ip route add 224.0.1.0/24 dev term00 || true"
-                                    ],
-                        "lxr-hw-addr": "AC:AA:01:01:xx:xx",
-                        "lxr-link": "br01r01t01"
-					},
-					"term01" : {
-						"ipv4-addr" : "172.16.2.100",
-						"ipv4-addr-netmask" : "255.255.255.0",
-						"post-up" : [
-                                    "ip route add 169.254.2.0/24 via 172.16.2.1 dev term01 || true",
-                                    "ip route add 172.17.2.0/24 via 172.16.2.1 dev term01 || true",
-                                    "ip route add 224.0.1.0/24 dev term00 || true"
-                        ],
-                        "lxr-hw-addr": "AC:AA:01:01:xx:xx",
-                        "lxr-link": "br01r01t02"
-					}
-				}
-			},
+		"topologies" : {
+			"two-two-four" : {
+				"description" : "two UEs, two Router, four Terminals - thats all",
+				"map" : [
+				"UE(01av01)         <-> Bridge(br01aFFr01)",
+				"Bridge(br01aFFr01) <-> Router(01r01)",
 
-			"02r01" : {
-                "interface-debug" : {
-                    "ipv4-addr" : "1.1.1.6",
-                    "ipv4-addr-netmask" : "255.255.0.0"
-                },
-				"interfaces" : {
-					"av00" : {
-						"ipv4-addr" : "10.0.2.100",
-						"ipv4-addr-netmask" : "255.255.255.0",
-						"lxr-hw-addr": "AC:BB:02:01:xx:xx",
-						"lxr-link": "br02aFFr01"
-					},
-					"term00" : {
-						"ipv4-addr" : "172.17.1.100",
-						"ipv4-addr-netmask" : "255.255.255.0",
-						"post-up" : [
-                                    "ip route add 169.254.1.0/24 via 172.17.1.1 dev term00 || true",
-                                    "ip route add 172.16.1.0/24 via 172.17.1.1 dev term00 || true",
-                                    "ip route add 224.0.1.0/24 dev term00 || true"
-                        ],
-                        "lxr-hw-addr": "AC:AA:02:01:xx:xx",
-                        "lxr-link": "br02r01t01"
-					},
-					"term01" : {
-						"ipv4-addr" : "172.17.2.100",
-						"ipv4-addr-netmask" : "255.255.255.0",
-						"post-up" : [
-                                    "ip route add 169.254.1.0/24 via 172.17.2.1 dev term00 || true",
-                                    "ip route add 172.16.1.0/24 via 172.17.2.1 dev term00 || true",
-                                    "ip route add 224.0.1.0/24 dev term00 || true"
-                        ],
-                        "lxr-hw-addr": "AC:AA:02:01:xx:xx",
-                        "lxr-link": "br02r01t02"
-					}
-				}
-			}
+				"Router(01r01)      <-> Bridge(br01r01t01)",
+				"Bridge(br01r01t01) <-> Terminal(01t01)",
+				"Terminal(01t01)    <-> Bridge(brFFt01x01)",
 
-		},
-
-		"ue" : {
-
-			"01av01" : {
-                "interface-debug" : {
-                    "ipv4-addr" : "1.1.1.7",
-                    "ipv4-addr-netmask" : "255.255.0.0"
-                },
-				"interfaces" : {
-					"eth0" : {
-						"ipv4-addr" : "10.0.1.1",
-						"ipv4-addr-netmask" : "255.255.255.0",
-						"post-up" : [
-													"ip route add default via 10.0.1.100 || true"
-												],
-						"lxr-hw-addr": "AC:BB:01:01:xx:xx",
-						"lxr-link": "br01aFFr01"
-					}
-				}
-			},
-
-			"02av01" : {
-                "interface-debug" : {
-                    "ipv4-addr" : "1.1.1.8",
-                    "ipv4-addr-netmask" : "255.255.0.0"
-                },
-				"interfaces" : {
-					"eth0" : {
-						"ipv4-addr" : "10.0.2.1",
-						"ipv4-addr-netmask" : "255.255.255.0",
-						"post-up" : [
-													"ip route add default via 10.0.2.100 || true"
-												],
-						"lxr-hw-addr": "AC:BB:02:01:xx:xx",
-						"lxr-link": "br02aFFr01"
-					}
-				}
-			}
-		}
-
-	},
-
-	"topologies" : {
-		"two-two-four" : {
-			"description" : "two UEs, two Router, four Terminals - thats all",
-			"map" : [
-					"UE(01av01)         <-> Bridge(br01aFFr01)",
-					"Bridge(br01aFFr01) <-> Router(01r01)",
-
-					"Router(01r01)      <-> Bridge(br01r01t01)",
-					"Bridge(br01r01t01) <-> Terminal(01t01)",
-					"Terminal(01t01)    <-> Bridge(brFFt01x01)",
-
-					"Router(01r01)      <-> Bridge(br01r01t02)",
-					"Bridge(br01r01t02) <-> Terminal(01t02)",
-					"Terminal(01t02)    <-> Bridge(brFFt02x01)",
+				"Router(01r01)      <-> Bridge(br01r01t02)",
+				"Bridge(br01r01t02) <-> Terminal(01t02)",
+				"Terminal(01t02)    <-> Bridge(brFFt02x01)",
 
 
-					"UE(02av01)         <-> Bridge(br02aFFr01)",
-					"Bridge(br02aFFr01) <-> Router(02r01)",
+				"UE(02av01)         <-> Bridge(br02aFFr01)",
+				"Bridge(br02aFFr01) <-> Router(02r01)",
 
-					"Router(02r01)      <-> Bridge(br02r01t01)",
-					"Bridge(br02r01t01) <-> Terminal(02t01)",
-					"Terminal(02t01)    <-> Bridge(brFFt01x01)",
+				"Router(02r01)      <-> Bridge(br02r01t01)",
+				"Bridge(br02r01t01) <-> Terminal(02t01)",
+				"Terminal(02t01)    <-> Bridge(brFFt01x01)",
+				"Terminal(02t01)    <-> Bridge(brFFt01x02)",
 
-					"Router(02r01)      <-> Bridge(br02r01t02)",
-					"Bridge(br02r01t02) <-> Terminal(02t02)",
-					"Terminal(02t02)    <-> Bridge(brFFt02x01)"
+				"Router(02r01)      <-> Bridge(br02r01t02)",
+				"Bridge(br02r01t02) <-> Terminal(02t02)",
+				"Terminal(02t02)    <-> Bridge(brFFt02x01)",
+				"Terminal(02t02)    <-> Bridge(brFFt02x02)",
+
+
+				"UE(03av01)         <-> Bridge(br03aFFr01)",
+				"Bridge(br03aFFr01) <-> Router(03r01)",
+
+				"Router(03r01)      <-> Bridge(br03r01t01)",
+				"Bridge(br03r01t01) <-> Terminal(03t01)",
+				"Terminal(03t01)    <-> Bridge(brFFt01x02)",
+
+				"Router(03r01)      <-> Bridge(br03r01t02)",
+				"Bridge(br03r01t02) <-> Terminal(03t02)",
+				"Terminal(03t02)    <-> Bridge(brFFt02x02)"
+
 				],
 				"netem" : [
 					[ "Bridge(brFFt01x01)", "static-50kbit" ],
-					[ "Bridge(brFFt02x01)", "static-200kbit" ]
+					[ "Bridge(brFFt02x01)", "static-200kbit" ],
+					[ "Bridge(brFFt01x02)", "static-50kbit" ],
+					[ "Bridge(brFFt02x02)", "static-200kbit" ]
 				]
-		}
-	},
+			}
+		},
 
-	"user": {
-		"username" : "superuser",
-		"userpass" : "superuser"
-	}
+		"user": {
+			"username" : "superuser",
+			"userpass" : "superuser"
+		}
 }
 
