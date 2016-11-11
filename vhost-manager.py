@@ -314,7 +314,7 @@ class Host:
 
     def install_base_packages(self):
         self.exec("apt-get -y update")
-        self.exec("apt-get -y install git vim bash python3")
+        self.exec("apt-get -y install git vim bash python3 wget")
 
     def bootstrap_packages(self):
         self.exec("git clone https://github.com/hgn/tr-bootstrapper.git", user=self.username)
@@ -1225,8 +1225,8 @@ class VHostManager:
         with open(apt_conf_file, "w") as f:
             f.write("{}".format(config))
         # shell specific proxy settings
-        config =  "export http_proxy={}\n".format(proxy_url)
-        config += "export https_proxy={}\n".format(proxy_url)
+        config =  'export http_proxy=\"{}\"\n'.format(proxy_url)
+        config += 'export https_proxy=\"{}\"\n'.format(proxy_url)
         apt_conf_file = os.path.join(tmp_dir, "shell-proxy.sh")
         with open(apt_conf_file, "w") as f:
             f.write("{}".format(config))
