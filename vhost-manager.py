@@ -458,8 +458,8 @@ class Bridge:
             raise ConfigurationException("Netem class has no class: {}\n".format(h))
         if h["class"] != "static":
             raise ConfigurationException("Netem class must be static for now: {}\n".format(h))
-        if "data" not in h:
-            raise ConfigurationException("Netem class has no data: {}\n".format(h))
+        if "pre-data" not in h:
+            raise ConfigurationException("Netem class has no PRE-data: {}\n".format(h))
 
         cmd = ""
         netem_cmd_packed = h["pre-data"]
