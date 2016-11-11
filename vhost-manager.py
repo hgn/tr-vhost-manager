@@ -20,6 +20,7 @@ import platform
 import pwd
 import collections
 import urllib
+import re
 
 # interface/bridge for local internet bridging
 INET_IFACE_NAME = "inet0"
@@ -1192,11 +1193,31 @@ class VHostManager:
         else:
             raise EnvironmentException("Distribution not detected")
 
+    def determine_proxy(self):
+        apt_conf_path = "/etc/apt/apt.conf"
+        p = re.compile('.*Acquire::http::Proxy.*\"(.*)\"', re.IGNORECASE)
+        if not os.path.isfile(apt_conf_path):
+            return None
+        if not os.access(apt_conf_path, os.R_OK):
+            return None
+        with open(apt_conf_path) as fd:
+            for line in fd:
+                 m = p.match(line)
+                 if m and m.group(1):
+                     return m.group(1)
+        return None
+
+
+
     def ask_proxy(self):
+        u = Utils()
         self.p.msg("Configuration of system proxy settings\n")
+        proxy = self.determine_proxy()
+        if proxy:
+            answer = u.query_yes_no("Is proxy \"{}\" correct?\n".format(proxy))
+            if answer == True: return proxy
         self.p.msg("If your are behing a proxy, enter the proxy url now or leave blank for none\n", color=None)
         res = False
-        u = Utils()
         while True:
             self.p.msg("URL must be in the form http://USER:PASS@url[:port]/\n", color=None)
             line = input("")
