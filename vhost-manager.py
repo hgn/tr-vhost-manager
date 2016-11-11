@@ -462,7 +462,7 @@ class Bridge:
             raise ConfigurationException("Netem class has no data: {}\n".format(h))
 
         cmd = ""
-        netem_cmd_packed = h["data"]
+        netem_cmd_packed = h["pre-data"]
         netem_cmd_splitted = netem_cmd_packed.split(";")
         for netem_cmd in netem_cmd_splitted:
             netem_cmd_key_val_tupple = netem_cmd.split(":")
