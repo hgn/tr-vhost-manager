@@ -463,27 +463,34 @@ class Bridge:
         return cmd
 
 
+    def __construct_netem_atoms(self, data):
+        return data
+
+
     def __parse_netem_static(self, data):
         d = dict()
         d["class"] = data["class"]
         d["description"] = data["description"]
         d["cmd-start"] = self.__construct_netem_cmd(data["data"])
+        d["atoms"] = self.__construct_netem_atoms(data["data"])
         return d
+
 
     def __parse_netem_dynamic(self, data):
         d = dict()
         d["class"] = data["class"]
         d["description"] = data["description"]
         d["cmd-start"] = self.__construct_netem_cmd(data["data"])
+        d["atoms"] = self.__construct_netem_atoms(data["data"])
 
         ar = []
         for line in data["op-data"]:
             dd = dict()
             dd["time"] = line[0]
             dd["cmd"] = self.__construct_netem_cmd(line[1])
+            dd["atoms"] = self.__construct_netem_atoms(line[1])
             ar.append(dd)
         d["cmd-runs"] = ar
-
         return d
 
 
@@ -1148,8 +1155,12 @@ class TopologyNetemStart():
                           action="store_true", help="generate a PDF of the topology")
         self.args = parser.parse_args(sys.argv[2:])
 
+    def __graph_account(self, time, data):
+        print("Time:{} Data: {}".format(time, data))
+
     def __execute(self, cmd):
-        print("    {}".format(cmd))
+        pass
+        #print("    {}".format(cmd))
 
     def __play(self, data_arr):
         print("Dynamic NETEM Player:")
@@ -1160,13 +1171,15 @@ class TopologyNetemStart():
                 if data[0] == clock:
                     print("")
                     self.__execute(data[1])
+                    self.__graph_account(clock, data[2])
             clock += 1
             time.sleep(1)
 
     def __execute_inits(self, inits):
         print("Intial setup of Netem Rules:")
         for i in inits:
-            self.__execute(i)
+            self.__execute(i[0])
+            self.__graph_account(0, i[1])
 
     def run(self):
         try:
@@ -1186,12 +1199,14 @@ class TopologyNetemStart():
             self.p.msg("  {}: {} {}\n".format(bridge.name, enabled, desc), color=None)
             if not bridge.netem:
                 continue
-            # remember init data
-            cmds_init.append(cmd_template.format(bridge.name, bridge.netem["cmd-start"]))
+            # remember init data ...
+            cmd_init = cmd_template.format(bridge.name, bridge.netem["cmd-start"])
+            cmds_init.append([cmd_init, bridge.netem["atoms"]])
+            # .. and dynamic ones too
             if bridge.netem["class"] == "dynamic":
                 for i in bridge.netem["cmd-runs"]:
                     cmd = cmd_template.format(bridge.name, i["cmd"])
-                    cmds_run.append([i["time"], cmd])
+                    cmds_run.append([i["time"], cmd, i["atoms"]])
 
         self.__execute_inits(cmds_init)
         self.__play(cmds_run)
