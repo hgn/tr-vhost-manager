@@ -482,7 +482,7 @@ class Bridge:
             dd["time"] = line[0]
             dd["cmd"] = self.__construct_netem_cmd(line[1])
             ar.append(dd)
-        d["cmd"] = ar
+        d["cmd-runs"] = ar
 
         return d
 
@@ -1189,7 +1189,7 @@ class TopologyNetemStart():
             # remember init data
             cmds_init.append(cmd_template.format(bridge.name, bridge.netem["cmd-start"]))
             if bridge.netem["class"] == "dynamic":
-                for i in bridge.netem["cmd"]:
+                for i in bridge.netem["cmd-runs"]:
                     cmd = cmd_template.format(bridge.name, i["cmd"])
                     cmds_run.append([i["time"], cmd])
 
