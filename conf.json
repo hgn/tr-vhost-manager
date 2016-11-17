@@ -3,16 +3,23 @@
 		"static-50kbit" : {
 			"description" : "50kbit",
 			"class" : "static",
-			"pre-data" : "delay:100ms,10ms;loss:0.1%;rate:50kbit",
-			"op-data"  : "delay:100ms,10ms;loss:0.1%;rate:50kbit"
+            "data" : { "delay": ["100ms", "10ms"], "loss": "0.1%", "rate": "200kbit" }
 		},
 		"static-200kbit" : {
 			"description" : "200kbit",
 			"class" : "static",
-			"pre-data" : "delay:100ms,10ms;loss:0.1%;rate:200kbit",
-			"op-data" : "delay:100ms,10ms;loss:0.1%;rate:200kbit"
-		}
-	},
+            "data" : { "delay": ["100ms", "10ms"], "loss": "0.1%", "rate": "200kbit" }
+		},
+		"dynamic-200kbit" : {
+			"description" : "200kbit, loss nothing, after 10 seconds 100% for 10 seconds",
+			"class" : "dynamic",
+            "data" : { "delay": ["100ms", "10ms"], "loss": "0%", "rate": "200kbit" },
+			"op-data" : [
+                [ 10, { "delay": ["100ms", "10ms"], "loss": "100%", "rate": "200kbit"} ],
+                [ 20, { "delay": ["100ms", "10ms"], "loss": "0%", "rate": "200kbit"} ]
+            ]
+        }
+    },
 
 		"devices" : {
 
@@ -382,7 +389,7 @@
 				"netem" : [
 					[ "Bridge(brFFt01x01)", "static-50kbit" ],
 					[ "Bridge(brFFt02x01)", "static-200kbit" ],
-					[ "Bridge(brFFt01x02)", "static-50kbit" ],
+					[ "Bridge(brFFt01x02)", "dynamic-200kbit" ],
 					[ "Bridge(brFFt02x02)", "static-200kbit" ]
 				]
 			}

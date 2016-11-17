@@ -447,29 +447,63 @@ class Bridge:
         self.c = c
         self.netem = self.__deserialize_netem(h)
 
+
+    def __construct_netem_cmd(self, data):
+        cmd = ""
+        for k, v in data.items():
+            if type(v) == list:
+                fv = ""
+                for vv in v:
+                    fv += "{} ".format(vv)
+            elif type(v) == str:
+                fv = v
+            else:
+                raise "format not supported {}".format(type(v))
+            cmd += " {} {}".format(k, fv)
+        return cmd
+
+
+    def __parse_netem_static(self, data):
+        d = dict()
+        d["class"] = data["class"]
+        d["description"] = data["description"]
+        d["cmd-start"] = self.__construct_netem_cmd(data["data"])
+        return d
+
+    def __parse_netem_dynamic(self, data):
+        d = dict()
+        d["class"] = data["class"]
+        d["description"] = data["description"]
+        d["cmd-start"] = self.__construct_netem_cmd(data["data"])
+
+        ar = []
+        for line in data["op-data"]:
+            dd = dict()
+            dd["time"] = line[0]
+            dd["cmd"] = self.__construct_netem_cmd(line[1])
+            ar.append(dd)
+        d["cmd"] = ar
+
+        return d
+
+
     def __deserialize_netem(self, h):
         if h is None:
             return None
-        d = dict()
         if "description" not in h:
             raise ConfigurationException("Netem class has no description: {}\n".format(h))
-        d["description"] = h["description"]
         if "class" not in h:
             raise ConfigurationException("Netem class has no class: {}\n".format(h))
-        if h["class"] != "static":
-            raise ConfigurationException("Netem class must be static for now: {}\n".format(h))
-        if "pre-data" not in h:
-            raise ConfigurationException("Netem class has no PRE-data: {}\n".format(h))
+        if "data" not in h:
+            raise ConfigurationException("Netem class has no data: {}\n".format(h))
+        if h["class"] == "dynamic" and not "op-data" in h:
+            raise ConfigurationException("Netem class is dyanmic but no op-data given{}\n".format(h))
 
-        cmd = ""
-        netem_cmd_packed = h["pre-data"]
-        netem_cmd_splitted = netem_cmd_packed.split(";")
-        for netem_cmd in netem_cmd_splitted:
-            netem_cmd_key_val_tupple = netem_cmd.split(":")
-            netem_cmd_values = netem_cmd_key_val_tupple[1].split(",")
-            cmd += "{} {} ".format(netem_cmd_key_val_tupple[0], " ".join(netem_cmd_values))
-        d['cmd'] = cmd
-        return d
+        if h["class"] == "static":
+            return self.__parse_netem_static(h)
+        # dynmic case
+        return self.__parse_netem_dynamic(h)
+
 
     def __str__(self):
         return "Bridge({})".format(self.name)
@@ -1110,7 +1144,29 @@ class TopologyNetemStart():
     def parse_local_options(self):
         parser = argparse.ArgumentParser()
         parser.add_argument("topology", help="name of the topology", type=str)
+        parser.add_argument( "-g", "--generate-graph", dest="graph", default=False,
+                          action="store_true", help="generate a PDF of the topology")
         self.args = parser.parse_args(sys.argv[2:])
+
+    def __execute(self, cmd):
+        print("    {}".format(cmd))
+
+    def __play(self, data_arr):
+        print("Dynamic NETEM Player:")
+        clock = 0
+        while True:
+            sys.stderr.write("\remulation time: {}".format(clock))
+            for data in data_arr:
+                if data[0] == clock:
+                    print("")
+                    self.__execute(data[1])
+            clock += 1
+            time.sleep(1)
+
+    def __execute_inits(self, inits):
+        print("Intial setup of Netem Rules:")
+        for i in inits:
+            self.__execute(i)
 
     def run(self):
         try:
@@ -1120,10 +1176,25 @@ class TopologyNetemStart():
             sys.exit(1)
 
         topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
+        print("Will now start emulate network behavior")
+        bridges = sorted(topology_db.get_bridges(), key=lambda k: k.name)
+        cmds_init = []; cmds_run = []
+        for bridge in bridges:
+            cmd_template = "tc qdisc change dev {} root netem {}"
+            enabled = "disabled" if bridge.netem is None else "enabled "
+            desc    = "" if bridge.netem is None else "\"" + bridge.netem["description"] + "\""
+            self.p.msg("  {}: {} {}\n".format(bridge.name, enabled, desc), color=None)
+            if not bridge.netem:
+                continue
+            # remember init data
+            cmds_init.append(cmd_template.format(bridge.name, bridge.netem["cmd-start"]))
+            if bridge.netem["class"] == "dynamic":
+                for i in bridge.netem["cmd"]:
+                    cmd = cmd_template.format(bridge.name, i["cmd"])
+                    cmds_run.append([i["time"], cmd])
 
-        for bridge in topology_db.get_bridges():
-            self.p.msg("  {}\n".format(bridge.name), color=None)
-            bridge.start_netem()
+        self.__execute_inits(cmds_init)
+        self.__play(cmds_run)
 
 
 class ContainerLister():
