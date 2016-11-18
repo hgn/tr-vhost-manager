@@ -1142,11 +1142,13 @@ class TopologyStop():
 
 class TopologyNetemStart():
 
+
     def __init__(self):
         uid0_required()
         self.u = Utils()
         self.p = Printer()
         self.parse_local_options()
+
 
     def parse_local_options(self):
         parser = argparse.ArgumentParser()
@@ -1155,31 +1157,84 @@ class TopologyNetemStart():
                           action="store_true", help="generate a PDF of the topology")
         self.args = parser.parse_args(sys.argv[2:])
 
-    def __graph_account(self, time, data):
-        print("Time:{} Data: {}".format(time, data))
+
+    def __graph_account(self, plot_db, time, interface, atoms):
+        if time not in plot_db:
+            plot_db[time] = dict()
+        plot_db[time][interface] = atoms
+
+
+    def __graph_interfaces(self, plot_db):
+        interfaces = []
+        for k, v in plot_db.items():
+            for entry in list(v.keys()):
+                interfaces.append(entry)
+        # return and filter duplicates first
+        return list(set(interfaces))
+
+
+    def __graph_convert(self, d, time, interface, data):
+        for i in ('loss', 'rate', 'delay'):
+            d[interface][i].append(data[i])
+
+
+    def __graph_plot_data_init(self, interfaces):
+        d = dict()
+        for interface in interfaces:
+            d[interface] = {}
+            for what in ('loss', 'rate', 'delay'):
+                d[interface][what] = list()
+        return d
+
+
+    def __graph_data(self, ctrl, plot_db):
+        atoms_last = {}; plot_data = {}
+        interfaces = self.__graph_interfaces(plot_db)
+        plot_data = self.__graph_plot_data_init(interfaces)
+        time_max = ctrl['time'] #max(plot_db.keys())
+        if time_max == 0: return
+        plot_data['time'] = list(range(time_max + 1))
+        for i in range(time_max + 1):
+            for interface in interfaces:
+                if not i in plot_db:
+                    # not accounted seconds
+                    self.__graph_convert(plot_data, i, interface, atoms_last[interface])
+                else:
+                    if interface in plot_db[i]:
+                        self.__graph_convert(plot_data, i, interface, plot_db[i][interface])
+                        atoms_last[interface] = plot_db[i][interface]
+                    else:
+                        self.__graph_convert(plot_data, i, interface, atoms_last[interface])
+
+        pprint.pprint(plot_data)
+
 
     def __execute(self, cmd):
         pass
         #print("    {}".format(cmd))
 
-    def __play(self, data_arr):
+
+    def __play(self, data_arr, ctrl, plot_db):
         print("Dynamic NETEM Player:")
-        clock = 0
         while True:
-            sys.stderr.write("\remulation time: {}".format(clock))
+            #sys.stderr.write("\rEmulation time: {}".format(clock))
             for data in data_arr:
-                if data[0] == clock:
-                    print("")
-                    self.__execute(data[1])
-                    self.__graph_account(clock, data[2])
-            clock += 1
+                if data[0] == ctrl['time']:
+                    #print("")
+                    #self.__execute(data[2])
+                    interface_name = data[2]
+                    atoms = data[3]
+                    self.__graph_account(plot_db, ctrl['time'], data[2], data[3])
+            ctrl['time'] += 1
             time.sleep(1)
 
-    def __execute_inits(self, inits):
+
+    def __execute_inits(self, inits, plot_db):
         print("Intial setup of Netem Rules:")
         for i in inits:
-            self.__execute(i[0])
-            self.__graph_account(0, i[1])
+            #self.__execute(i[0])
+            self.__graph_account(plot_db, 0, i[1], i[2])
+
 
     def run(self):
         try:
@@ -1189,7 +1244,7 @@ class TopologyNetemStart():
             sys.exit(1)
 
         topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
-        print("Will now start emulate network behavior")
+        self.p.msg("Will now start emulate network behavior\n")
         bridges = sorted(topology_db.get_bridges(), key=lambda k: k.name)
         cmds_init = []; cmds_run = []
         for bridge in bridges:
@@ -1201,15 +1256,21 @@ class TopologyNetemStart():
                 continue
             # remember init data ...
             cmd_init = cmd_template.format(bridge.name, bridge.netem["cmd-start"])
-            cmds_init.append([cmd_init, bridge.netem["atoms"]])
+            cmds_init.append([cmd_init, bridge.name, bridge.netem["atoms"]])
             # .. and dynamic ones too
             if bridge.netem["class"] == "dynamic":
                 for i in bridge.netem["cmd-runs"]:
                     cmd = cmd_template.format(bridge.name, i["cmd"])
-                    cmds_run.append([i["time"], cmd, i["atoms"]])
+                    cmds_run.append([i["time"], cmd, bridge.name, i["atoms"]])
 
-        self.__execute_inits(cmds_init)
-        self.__play(cmds_run)
+        plot_db = dict(); ctrl = {}; ctrl['time'] = 0
+        self.__execute_inits(cmds_init, plot_db)
+        try:
+            self.__play(cmds_run, ctrl, plot_db)
+        except KeyboardInterrupt:
+            self.__graph_data(ctrl, plot_db)
+
+
 
 
 class ContainerLister():
@@ -1264,6 +1325,9 @@ class VHostManager:
         os.system("apt-get --yes --force-yes install lxc tmux ssh graphviz")
         return True
 
+    def install_packages_debian(self):
+        self.install_packages_ubuntu()
+
     def install_packages_arch(self):
         os.system("pacman -Syu --noconfirm")
         os.system("pacman -Sy --noconfirm ebtables community/lxc community/debootstrap community/tmux")
@@ -1279,6 +1343,9 @@ class VHostManager:
         elif distribution[0] == "arch":
             self.p.msg("seems you are using Arch, great ...\n")
             self.install_packages_arch()
+        elif distribution[0] == "debian":
+            self.p.msg("seems you are using Debian, great ...\n")
+            self.install_packages_debian()
         else:
             raise EnvironmentException("Distribution not detected")
 
