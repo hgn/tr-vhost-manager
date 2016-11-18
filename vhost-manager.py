@@ -1220,11 +1220,12 @@ class TopologyNetemStart():
             #sys.stderr.write("\rEmulation time: {}".format(clock))
             for data in data_arr:
                 if data[0] == ctrl['time']:
-                    #print("")
-                    #self.__execute(data[2])
                     interface_name = data[2]
                     atoms = data[3]
-                    self.__graph_account(plot_db, ctrl['time'], data[2], data[3])
+                    #print("")
+                    #self.__execute(data[2])
+                    if self.args.graph:
+                        self.__graph_account(plot_db, ctrl['time'], data[2], data[3])
             ctrl['time'] += 1
             time.sleep(1)
 
@@ -1233,7 +1234,8 @@ class TopologyNetemStart():
         print("Intial setup of Netem Rules:")
         for i in inits:
             #self.__execute(i[0])
-            self.__graph_account(plot_db, 0, i[1], i[2])
+            if self.args.graph:
+                self.__graph_account(plot_db, 0, i[1], i[2])
 
 
     def run(self):
@@ -1245,6 +1247,11 @@ class TopologyNetemStart():
 
         topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
         self.p.msg("Will now start emulate network behavior\n")
+        if self.args.graph:
+            msg = "Generate a PDF of the bridge characteristics\n"
+        else:
+            msg = "Generate NO PDF of the bridge characteristics (--generate-graph)\n"
+        self.p.msg(msg, color=None)
         bridges = sorted(topology_db.get_bridges(), key=lambda k: k.name)
         cmds_init = []; cmds_run = []
         for bridge in bridges:
@@ -1268,7 +1275,8 @@ class TopologyNetemStart():
         try:
             self.__play(cmds_run, ctrl, plot_db)
         except KeyboardInterrupt:
-            self.__graph_data(ctrl, plot_db)
+            if self.args.graph:
+                self.__graph_data(ctrl, plot_db)
 
 
 
