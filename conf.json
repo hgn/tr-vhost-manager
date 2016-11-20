@@ -3,17 +3,17 @@
 		"static-50kbit" : {
 			"description" : "50kbit",
 			"class" : "static",
-            "data" : { "delay": ["100ms", "10ms"], "loss": "0.1%", "rate": "200kbit" }
+      "data" : { "delay": ["100ms", "10ms"], "loss": "0.1%", "rate": "200kbit" }
 		},
 		"static-200kbit" : {
 			"description" : "200kbit",
 			"class" : "static",
-            "data" : { "delay": ["100ms", "10ms"], "loss": "0.1%", "rate": "200kbit" }
+      "data" : { "delay": ["100ms", "10ms"], "loss": "0.1%", "rate": "200kbit" }
 		},
 		"dynamic-200kbit" : {
 			"description" : "200kbit, loss nothing, after 10 seconds 100% for 10 seconds",
 			"class" : "dynamic",
-            "data" : { "delay": ["100ms", "10ms"], "loss": "0%", "rate": "200kbit" },
+      "data" : { "delay": ["100ms", "10ms"], "loss": "0%", "rate": "200kbit" },
 			"op-data" : [
                 [ 2, { "delay": ["100ms", "10ms"], "loss": "100%", "rate": "200kbit"} ],
                 [ 5, { "delay": ["100ms", "10ms"], "loss": "0%", "rate": "200kbit"} ]

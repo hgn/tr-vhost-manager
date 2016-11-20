@@ -1162,10 +1162,14 @@ class TopologyNetemStart():
         parser.add_argument( "-g", "--generate-graph", dest="graph", default=False,
                           action="store_true", help="generate a PDF of the topology")
         self.args = parser.parse_args(sys.argv[2:])
-        self.__check_mathplot_mod()
+        if self.args.graph:
+            self.__check_mathplot_mod()
+            self._graph_x_axis_data = ('loss', 'delay', 'rate')
+
 
     def __check_mathplot_mod(self):
         from matplotlib import pyplot as plt
+
 
     def __graph_account(self, plot_db, time, interface, atoms):
         if time not in plot_db:
@@ -1183,7 +1187,7 @@ class TopologyNetemStart():
 
 
     def __graph_convert(self, d, time, interface, data):
-        for i in ('loss', 'rate', 'delay'):
+        for i in self._graph_x_axis_data:
             d[interface][i].append(data[i])
 
 
@@ -1191,7 +1195,7 @@ class TopologyNetemStart():
         d = dict()
         for interface in interfaces:
             d[interface] = {}
-            for what in ('loss', 'rate', 'delay'):
+            for what in self._graph_x_axis_data:
                 d[interface][what] = list()
         return d
 
@@ -1200,7 +1204,7 @@ class TopologyNetemStart():
         atoms_last = {}; plot_data = {}
         interfaces = self.__graph_interfaces(plot_db)
         plot_data = self.__graph_plot_data_init(interfaces)
-        time_max = ctrl['time'] #max(plot_db.keys())
+        time_max = ctrl['time']
         if time_max == 0: return
         plot_data['time'] = list(range(time_max + 1))
         for i in range(time_max + 1):
@@ -1214,6 +1218,17 @@ class TopologyNetemStart():
                         atoms_last[interface] = plot_db[i][interface]
                     else:
                         self.__graph_convert(plot_data, i, interface, atoms_last[interface])
+        columns = len(self._graph_x_axis_data)
+        rows = len(interfaces)
+        entry = 1
+        fig = plt.figure
+        for interface in interfaces:
+            for what in self._graph_x_axis_data:
+                axis = fig.add_subplot(rows, columns, entry)
+                axis.plot()
+                entry += 1
+        plt.show()
+
         pprint.pprint(plot_data)
 
 
