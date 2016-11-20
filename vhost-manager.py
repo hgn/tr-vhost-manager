@@ -1162,7 +1162,10 @@ class TopologyNetemStart():
         parser.add_argument( "-g", "--generate-graph", dest="graph", default=False,
                           action="store_true", help="generate a PDF of the topology")
         self.args = parser.parse_args(sys.argv[2:])
+        self.__check_mathplot_mod()
 
+    def __check_mathplot_mod(self):
+        from matplotlib import pyplot as plt
 
     def __graph_account(self, plot_db, time, interface, atoms):
         if time not in plot_db:
