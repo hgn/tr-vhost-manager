@@ -537,6 +537,11 @@ class Bridge:
         Utils.sexec("ip link set dev {} down".format(DEBUG_BRIDGE_NAME))
         Utils.sexec("brctl delbr {}".format(DEBUG_BRIDGE_NAME))
 
+    @staticmethod
+    def netem_exec(bridge_name, cmd):
+        print("BRIDGE EXEC: {} {}".format(bridge_name, cmd))
+        #Utils.sexec("tc qdisc add dev {} root netem {}".format(bridge_name, cmd))
+
     def create(self):
         self.p.msg("Create bridge: {}\n".format(self.name))
         brige_path = os.path.join("/sys/class/net", self.name)
@@ -1147,6 +1152,7 @@ class TopologyNetemStart():
         uid0_required()
         self.u = Utils()
         self.p = Printer()
+        self.player_resolution = 1
         self.parse_local_options()
 
 
@@ -1205,35 +1211,29 @@ class TopologyNetemStart():
                         atoms_last[interface] = plot_db[i][interface]
                     else:
                         self.__graph_convert(plot_data, i, interface, atoms_last[interface])
-
         pprint.pprint(plot_data)
 
 
-    def __execute(self, cmd):
-        pass
-        #print("    {}".format(cmd))
-
-
     def __play(self, data_arr, ctrl, plot_db):
-        print("Dynamic NETEM Player:")
         while True:
-            #sys.stderr.write("\rEmulation time: {}".format(clock))
+            sys.stderr.write("\rEmulation time: {}s".format(ctrl['time']))
             for data in data_arr:
                 if data[0] == ctrl['time']:
+                    cmd = data[1]
                     interface_name = data[2]
                     atoms = data[3]
-                    #print("")
-                    #self.__execute(data[2])
+                    print("")
+                    Bridge.netem_exec(interface_name, cmd)
                     if self.args.graph:
                         self.__graph_account(plot_db, ctrl['time'], data[2], data[3])
-            ctrl['time'] += 1
-            time.sleep(1)
+            ctrl['time'] += self.player_resolution
+            time.sleep(self.player_resolution)
 
 
     def __execute_inits(self, inits, plot_db):
         print("Intial setup of Netem Rules:")
         for i in inits:
-            #self.__execute(i[0])
+            Bridge.netem_exec(i[1], i[0])
             if self.args.graph:
                 self.__graph_account(plot_db, 0, i[1], i[2])
 
@@ -1246,7 +1246,7 @@ class TopologyNetemStart():
             sys.exit(1)
 
         topology_db = self.c.create_topology_db(self.args.topology, self.p, self.u, self.c)
-        self.p.msg("Will now start emulate network behavior\n")
+        self.p.msg("Network Emulation Starting Sequence\n")
         if self.args.graph:
             msg = "Generate a PDF of the bridge characteristics\n"
         else:
@@ -1255,20 +1255,17 @@ class TopologyNetemStart():
         bridges = sorted(topology_db.get_bridges(), key=lambda k: k.name)
         cmds_init = []; cmds_run = []
         for bridge in bridges:
-            cmd_template = "tc qdisc change dev {} root netem {}"
-            enabled = "disabled" if bridge.netem is None else "enabled "
+            enabled = "none" if bridge.netem is None else "enabled "
             desc    = "" if bridge.netem is None else "\"" + bridge.netem["description"] + "\""
             self.p.msg("  {}: {} {}\n".format(bridge.name, enabled, desc), color=None)
             if not bridge.netem:
                 continue
             # remember init data ...
-            cmd_init = cmd_template.format(bridge.name, bridge.netem["cmd-start"])
-            cmds_init.append([cmd_init, bridge.name, bridge.netem["atoms"]])
+            cmds_init.append([bridge.netem["cmd-start"], bridge.name, bridge.netem["atoms"]])
             # .. and dynamic ones too
             if bridge.netem["class"] == "dynamic":
                 for i in bridge.netem["cmd-runs"]:
-                    cmd = cmd_template.format(bridge.name, i["cmd"])
-                    cmds_run.append([i["time"], cmd, bridge.name, i["atoms"]])
+                    cmds_run.append([i["time"], i["cmd"], bridge.name, i["atoms"]])
 
         plot_db = dict(); ctrl = {}; ctrl['time'] = 0
         self.__execute_inits(cmds_init, plot_db)
