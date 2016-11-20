@@ -1161,6 +1161,8 @@ class TopologyNetemStart():
         parser.add_argument("topology", help="name of the topology", type=str)
         parser.add_argument( "-g", "--generate-graph", dest="graph", default=False,
                           action="store_true", help="generate a PDF of the topology")
+        parser.add_argument( "-l", "--loop", dest="loop", default=False,
+                          action="store_true", help="re-loop after last netem command was execed")
         self.args = parser.parse_args(sys.argv[2:])
         if self.args.graph:
             self.__check_mathplot_mod()
@@ -1168,7 +1170,8 @@ class TopologyNetemStart():
 
 
     def __check_mathplot_mod(self):
-        from matplotlib import pyplot as plt
+        pass
+        #from matplotlib import pyplot as plt
 
 
     def __graph_account(self, plot_db, time, interface, atoms):
@@ -1201,6 +1204,9 @@ class TopologyNetemStart():
 
 
     def __graph_data(self, ctrl, plot_db):
+        print(max(plot_db.keys()))
+
+        return
         atoms_last = {}; plot_data = {}
         interfaces = self.__graph_interfaces(plot_db)
         plot_data = self.__graph_plot_data_init(interfaces)
@@ -1221,18 +1227,23 @@ class TopologyNetemStart():
         columns = len(self._graph_x_axis_data)
         rows = len(interfaces)
         entry = 1
-        fig = plt.figure
-        for interface in interfaces:
-            for what in self._graph_x_axis_data:
-                axis = fig.add_subplot(rows, columns, entry)
-                axis.plot()
-                entry += 1
-        plt.show()
+        #fig = plt.figure
+        #for interface in interfaces:
+        #    for what in self._graph_x_axis_data:
+        #        axis = fig.add_subplot(rows, columns, entry)
+        #        axis.plot()
+        #        entry += 1
+        #plt.show()
 
         pprint.pprint(plot_data)
 
+    def _loop_re_spawn_data(self, data_arr, time_delta):
+        print("endless loop enabled, respawn timer for next loop")
+        for data in data_arr:
+            data[0] += time_delta
 
-    def __play(self, data_arr, ctrl, plot_db):
+    def __play(self, data_arr, ctrl, max_exec_time, plot_db):
+        print(max_exec_time)
         while True:
             sys.stderr.write("\rEmulation time: {}s".format(ctrl['time']))
             for data in data_arr:
@@ -1244,6 +1255,8 @@ class TopologyNetemStart():
                     Bridge.netem_exec(interface_name, cmd)
                     if self.args.graph:
                         self.__graph_account(plot_db, ctrl['time'], data[2], data[3])
+            if self.args.loop and ctrl['time'] != 0 and ctrl['time'] % max_exec_time == 0:
+                self._loop_re_spawn_data(data_arr, max_exec_time)
             ctrl['time'] += self.player_resolution
             time.sleep(self.player_resolution)
 
@@ -1257,6 +1270,7 @@ class TopologyNetemStart():
 
 
     def run(self):
+        max_exec_time = -1
         try:
             self.c = Configuration(topology=self.args.topology)
         except ArgumentException as e:
@@ -1283,12 +1297,13 @@ class TopologyNetemStart():
             # .. and dynamic ones too
             if bridge.netem["class"] == "dynamic":
                 for i in bridge.netem["cmd-runs"]:
+                    max_exec_time = max(max_exec_time, i['time'])
                     cmds_run.append([i["time"], i["cmd"], bridge.name, i["atoms"]])
 
         plot_db = dict(); ctrl = {}; ctrl['time'] = 0
         self.__execute_inits(cmds_init, plot_db)
         try:
-            self.__play(cmds_run, ctrl, plot_db)
+            self.__play(cmds_run, ctrl, max_exec_time, plot_db)
         except KeyboardInterrupt:
             if self.args.graph:
                 self.__graph_data(ctrl, plot_db)

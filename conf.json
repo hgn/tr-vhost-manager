@@ -15,8 +15,8 @@
 			"class" : "dynamic",
       "data" : { "delay": ["100ms", "10ms"], "loss": "0%", "rate": "200kbit" },
 			"op-data" : [
-                [ 2, { "delay": ["100ms", "10ms"], "loss": "100%", "rate": "200kbit"} ],
-                [ 5, { "delay": ["100ms", "10ms"], "loss": "0%", "rate": "200kbit"} ]
+                [ 5, { "delay": ["100ms", "10ms"], "loss": "100%", "rate": "200kbit"} ],
+                [ 10, { "delay": ["100ms", "10ms"], "loss": "0%", "rate": "200kbit"} ]
             ]
         }
     },
