@@ -1171,7 +1171,12 @@ class TopologyNetemStart():
 
 
     def __check_mathplot_mod(self):
-        from matplotlib import pyplot as plt
+        try:
+            from matplotlib import pyplot as plt
+        except:
+            self.p.msg("You specified \"--generate-graph\" but no matplotlib is installed!\n", color="red")
+            self.p.msg("Exiting now, bye bye ...\n", color="red")
+            sys.exit(1)
 
 
     def __graph_account(self, plot_db, time, interface, atoms):
