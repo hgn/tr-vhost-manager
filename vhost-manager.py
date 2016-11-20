@@ -1208,13 +1208,24 @@ class TopologyNetemStart():
                 d[interface][what] = list()
         return d
 
-    def _graph_sanitze_values(self, values):
+    def _graph_rm_unit(self, value):
+        if value.endswith('%'):
+            return value[0:len(value) - 1]
+        if value.endswith('ms'):
+            return value[0:len(value) - 2]
+        if value.endswith('kbit'):
+            return value[0:len(value) - 4]
+
+    def _graph_rm_units(self, values):
         r = []
         for value in values:
-            if value.endswith('%'):
-                r.append(value[0:len(value) - 1])
-            if value.endswith('kbit'):
-                r.append(value[0:len(value) - 4])
+            r.append(self._graph_rm_unit(value))
+        return r
+
+    def _graph_rm_var(self, values):
+        r = []
+        for value in values:
+            r.append(self._graph_rm_unit(value[0]))
         return r
 
 
@@ -1246,9 +1257,9 @@ class TopologyNetemStart():
             for what in self._graph_x_axis_data:
                 axis = fig.add_subplot(rows, columns, entry)
                 if what in ("rate", "loss"):
-                    axis.plot(plot_data['time'], self._graph_sanitze_values(plot_data[interface][what]))
+                    axis.plot(plot_data['time'], self._graph_rm_units(plot_data[interface][what]))
                 elif what == "delay":
-                    pass
+                    axis.plot(plot_data['time'], self._graph_rm_var(plot_data[interface][what]))
                 entry += 1
         plt.show()
 
