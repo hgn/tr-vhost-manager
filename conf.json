@@ -345,8 +345,8 @@
 		},
 
 		"topologies" : {
-			"two-two-four" : {
-				"description" : "two UEs, two Router, four Terminals - thats all",
+			"three-three-six" : {
+				"description" : "horizontal: three UEs, three Router, six Terminals - thats all",
 				"map" : [
 				"UE(01av01)         <-> Bridge(br01aFFr01)",
 				"Bridge(br01aFFr01) <-> Router(01r01)",
