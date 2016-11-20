@@ -539,8 +539,9 @@ class Bridge:
 
     @staticmethod
     def netem_exec(bridge_name, cmd):
-        print("BRIDGE EXEC: {} {}".format(bridge_name, cmd))
-        #Utils.sexec("tc qdisc add dev {} root netem {}".format(bridge_name, cmd))
+        cmd =  "tc qdisc change dev {} root netem {}".format(bridge_name, cmd)
+        print("  bridge exec: {}".format(cmd))
+        Utils.sexec(cmd)
 
     def create(self):
         self.p.msg("Create bridge: {}\n".format(self.name))
@@ -1170,8 +1171,7 @@ class TopologyNetemStart():
 
 
     def __check_mathplot_mod(self):
-        pass
-        #from matplotlib import pyplot as plt
+        from matplotlib import pyplot as plt
 
 
     def __graph_account(self, plot_db, time, interface, atoms):
@@ -1204,9 +1204,6 @@ class TopologyNetemStart():
 
 
     def __graph_data(self, ctrl, plot_db):
-        print(max(plot_db.keys()))
-
-        return
         atoms_last = {}; plot_data = {}
         interfaces = self.__graph_interfaces(plot_db)
         plot_data = self.__graph_plot_data_init(interfaces)
@@ -1227,25 +1224,23 @@ class TopologyNetemStart():
         columns = len(self._graph_x_axis_data)
         rows = len(interfaces)
         entry = 1
-        #fig = plt.figure
-        #for interface in interfaces:
-        #    for what in self._graph_x_axis_data:
-        #        axis = fig.add_subplot(rows, columns, entry)
-        #        axis.plot()
-        #        entry += 1
-        #plt.show()
+        fig = plt.figure
+        for interface in interfaces:
+            for what in self._graph_x_axis_data:
+                axis = fig.add_subplot(rows, columns, entry)
+                axis.plot()
+                entry += 1
+        plt.show()
 
         pprint.pprint(plot_data)
 
     def _loop_re_spawn_data(self, data_arr, time_delta):
-        print("endless loop enabled, respawn timer for next loop")
         for data in data_arr:
             data[0] += time_delta
 
     def __play(self, data_arr, ctrl, max_exec_time, plot_db):
-        print(max_exec_time)
         while True:
-            sys.stderr.write("\rEmulation time: {}s".format(ctrl['time']))
+            self.p.msg("\rEmulation time: {}s".format(ctrl['time']), color="magenta")
             for data in data_arr:
                 if data[0] == ctrl['time']:
                     cmd = data[1]
@@ -1262,7 +1257,7 @@ class TopologyNetemStart():
 
 
     def __execute_inits(self, inits, plot_db):
-        print("Intial setup of Netem Rules:")
+        self.p.msg("Initial setup of Netem Rules:\n")
         for i in inits:
             Bridge.netem_exec(i[1], i[0])
             if self.args.graph:
