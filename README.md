@@ -13,3 +13,7 @@ Edit `/etc/default/lxc-net`
 ```
 /etc/default/lxc-net
 ```
+
+```
+sudo systemctl enable lxc-net
+```
